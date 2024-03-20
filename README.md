@@ -1,4 +1,4 @@
-# 1st project - Sanjeev Jha.
+# 1st project - Prof. Sanjeev Jha.
 - we are predicting avalnache sites in the himalyan region.
   ### What has to be done.
   - Reading and developing my own understanding of different models, and applying it to the project.
