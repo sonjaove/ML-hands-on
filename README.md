@@ -1,5 +1,6 @@
-# 1st project - Prof. Sanjeev Jha.
+# 1st project - Prof. Sanjeev Jha. (this is out as well cause data is not available)
 - we are predicting avalnache sites in the himalyan region.
+- this will be made with rohit bhaiya.
   ### What has to be done.
   - Reading and developing my own understanding of different models, and applying it to the project.
   - making the report of which model would be good the senior asked me to.
@@ -18,3 +19,12 @@
 # 2nd project - tiwari bhaiya.(this will take some time)
 - We are predicting the health impact of pollution on th northern states of india
 - a hybrid radnom forest is to be used(according to the paper), but something else can also be used.
+# 3rd project - Prof. Sanjeev Jha. (this one is out for now as there is some problem with the grid)
+- this is profs paper most probably.
+- Analysing mumbai basin, and fitting the data for 3 years.
+- Then calculate the weighted average for each part in each grid, ans then sum them up to and assign this value to the main centroid of that particular shape.
+# 4th project - Prof. Sanjeev Jha (current) 
+- analysing the Narmada river basin for 3 years:
+    1. 2005
+    2. 2015
+    3. 2021
