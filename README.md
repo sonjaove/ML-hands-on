@@ -1,10 +1,17 @@
+# Completed projects:
+  - 4th: predicted the rainfall on the centre of the narmada basin for the year 2005, 2015 and 2021 using area averaged method.
+# On-going ones:
+  - 1st project 
+
+
 # 1st project - Prof. Sanjeev Jha. (this is out as well cause data is not available)
+- Converted into a research paper (most probably).
 - we are predicting avalnache sites in the himalyan region.
 - this will be made with rohit bhaiya.
   ### What has to be done.
   - Reading and developing my own understanding of different models, and applying it to the project.
   - making the report of which model would be good the senior asked me to.
-  - loading the data set.
+  - loading the data set. 
   - intrpolating values whenever required.
   - analysing the data set and cropping it to the upper himalyan region.
   - classifying data, if random forest model is chossen.
@@ -24,7 +31,7 @@
 - Analysing mumbai basin, and fitting the data for 3 years.
 - Then calculate the weighted average for each part in each grid, ans then sum them up to and assign this value to the main centroid of that particular shape.
 # 4th project - Prof. Sanjeev Jha (current) 
-- analysing the Narmada river basin for 3 years:
+- getting the rainfall on Narmada river basin for 3 years:
     1. 2005
     2. 2015
     3. 2021
