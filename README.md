@@ -15,6 +15,3 @@
     2. plot some plots, using xarray is easy with that, but the Dataset from netCDF4 module is more practical for a small dataset.
     3. make a custom grid and then add data
     4.  and then proceed to do the rest of the work.(splitting and and rest of the things are to be learned yet).
-# 2nd project - tiwari bhaiya.(this will take some time)
-- We are predicting the health impact of pollution on th northern states of india
-- a hybrid radnom forest is to be used(according to the paper), but something else can also be used.
