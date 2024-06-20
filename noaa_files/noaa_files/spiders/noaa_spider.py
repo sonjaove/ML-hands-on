@@ -4,7 +4,7 @@ from urllib.parse import urljoin, urlparse
 
 class NoaaSpider(scrapy.Spider):
     name = "noaa_spider"
-    start_urls = [f"https://www.ncei.noaa.gov/data/precipitation-persiann/access/{year}/" for year in range(2011, 2024)]
+    start_urls = [f"https://www.ncei.noaa.gov/data/precipitation-persiann/access/{year}/" for year in range(1983, 2024)]
 
     def parse(self, response):
         for link in response.css('a::attr(href)').getall():
@@ -21,7 +21,7 @@ class NoaaSpider(scrapy.Spider):
             # Parse the URL to get the file name
             parsed_url = urlparse(file_url)
             file_name = os.path.basename(parsed_url.path)
-            file_path = os.path.join("C:\\Users\\Ankit\\Documents\\Vedanshi\\ML-hands-on\\course_work\\nc_files\\", response.url.split('/')[-2], file_name)
+            file_path = os.path.join("C:\\Users\\Ankit\\Documents\\Vedanshi\\nc_files\\", response.url.split('/')[-2], file_name)
 
             # Skip invalid filenames
             if not file_name:
