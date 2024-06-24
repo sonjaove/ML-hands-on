@@ -29,8 +29,8 @@ def preprocess_crop_and_merge(input_folder, output_file):
             ds['precipitation'].encoding['_FillValue'] = -9999.0
         
         # Get the indices using np.where and crop the data
-        lat_indices = np.where((ds.lat >= 25) & (ds.lat <= 30))[0]
-        lon_indices = np.where((ds.lon >= 83) & (ds.lon <= 90))[0]
+        lat_indices = np.where((ds.lat >= 27.8) & (ds.lat <= 31.5))[0]
+        lon_indices = np.where((ds.lon >= 76.11) & (ds.lon <= 81.3))[0]
         ds_cropped = ds.isel(lat=lat_indices, lon=lon_indices)
         
         datasets.append(ds_cropped)
