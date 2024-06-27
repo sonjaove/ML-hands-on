@@ -1,3 +1,10 @@
+'''this file contains the code to merge the data from the downloaded files and crop the data to the required area 
+you can change the method for_all_years to suite your needs.
+you can also change the lat, lon cordinates to crop the data to your required area.
+Set an input folder and get an ouput file. if your folder has subfolders for each year, the code will merge the data for each year and save it in the output file for each year
+if not than you'll have to modify the method `for_all_years` to suit your needs, do not mend with the method `preprocess_crop_and_merge`.
+(you can also try using the method `merge_netCDF_files`).'''
+
 import xarray as xr
 import os
 import glob
@@ -29,8 +36,8 @@ def preprocess_crop_and_merge(input_folder, output_file):
             ds['precipitation'].encoding['_FillValue'] = -9999.0
         
         # Get the indices using np.where and crop the data
-        lat_indices = np.where((ds.lat >= 27.8) & (ds.lat <= 31.5))[0]
-        lon_indices = np.where((ds.lon >= 76.11) & (ds.lon <= 81.3))[0]
+        lat_indices = np.where((ds.lat >= 29.90680580481834) & (ds.lat <= 31.110000000000003))[0]
+        lon_indices = np.where((ds.lon >= 78.48815971828309) & (ds.lon <= 80.34216592787854))[0]
         ds_cropped = ds.isel(lat=lat_indices, lon=lon_indices)
         
         datasets.append(ds_cropped)
@@ -58,3 +65,23 @@ def for_all_the_years(input_folder='C:\\Users\\Ankit\\Documents\\Vedanshi\\nc_fi
         preprocess_crop_and_merge(year_folder, output_file)
 
 for_all_the_years()
+
+'''this method will merge the data for each year and save it in the output file for the all the years in a single file.
+the input folder should contain merged files of a particular year of all the years.
+
+
+A use case is shown in final_merging.ipynb file.'''
+
+def merge_netCDF_files(input_folder, output_file):
+    # Create a list of all NetCDF files sorted by their filename (assuming filenames contain dates)
+    file_pattern = os.path.join(input_folder, '*.nc')
+    files = sorted(glob.glob(file_pattern))
+    
+    # Load datasets into a list and concatenate them manually
+    datasets = [xr.open_dataset(file) for file in files]
+    combined_ds = xr.concat(datasets, dim='time')
+
+    # Save the combined dataset to a new NetCDF file
+    combined_ds.to_netcdf(output_file)
+    for ds in datasets:  # Close all datasets to free up resources
+        ds.close()
