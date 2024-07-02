@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # This repo conists of codes for making:
     1. making grid.
 
@@ -7,5 +8,4 @@
 
     4. merging files 
 
-- customize the codes to suit your needs.
-
+- customize the codes to suit your need. 
