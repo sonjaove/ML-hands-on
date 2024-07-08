@@ -1,0 +1,5 @@
+# Ignore all JPEG files
+*.jpeg
+*.jpg
+model_tani.py
+train_tani.py
