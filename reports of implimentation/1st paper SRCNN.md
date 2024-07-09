@@ -31,5 +31,7 @@
 
     ![output form CIFAR dataset](image.png)
 
-- it would possibly give good output for 91 images dataset.
- 
+- for 91 subimage dataset, it gave a psnr of, with 9-1-5 arch and paddingof 6 in the middle layer for 100 epochs.
+    ![psnr on 91 sub images dataset.](image-2.png)
+
+- for 91 subimage dataset, it gave a psnr of, with 9-3-1-5 arch and paddingof ker_size//2 in each layer for 100 epochs.
