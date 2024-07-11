@@ -13,7 +13,7 @@ import warnings
 from xarray.coding.variables import SerializationWarning
 import tqdm
 
-def preprocess_crop_and_merge(input_folder, output_file):
+def preprocess_crop_and_merge(input_folder, output_file, lat_min=32.324276, lat_max=37.370157, lon_min=72.048340, lon_max=80.727539):
     # PERSIANN-CDR_v01r01_
     file_pattern = os.path.join(input_folder, 'PERSIANN-CDR_v01r01_*.nc')
     files = sorted(glob.glob(file_pattern))
@@ -36,8 +36,8 @@ def preprocess_crop_and_merge(input_folder, output_file):
             ds['precipitation'].encoding['_FillValue'] = -9999.0
         
         # Get the indices using np.where and crop the data
-        lat_indices = np.where((ds.lat >= 29.90680580481834) & (ds.lat <= 31.110000000000003))[0]
-        lon_indices = np.where((ds.lon >= 78.48815971828309) & (ds.lon <= 80.34216592787854))[0]
+        lat_indices = np.where((ds.lat >= lat_min) & (ds.lat <= lat_max))[0]
+        lon_indices = np.where((ds.lon >= lon_min) & (ds.lon <= lon_max))[0]
         ds_cropped = ds.isel(lat=lat_indices, lon=lon_indices)
         
         datasets.append(ds_cropped)
@@ -58,8 +58,8 @@ def preprocess_crop_and_merge(input_folder, output_file):
     else:
         print(f"No datasets to concatenate in {input_folder}")
 
-def for_all_the_years(input_folder='C:\\Users\\Ankit\\Documents\\Vedanshi\\nc_files'):
-    for year in tqdm.tqdm(range(1983, 2024), desc='Processing files', ascii=True):
+def for_all_the_years(input_folder='C:\\Users\\Ankit\\Documents\\Vedanshi\\nc_files',start_year=2000,end_year=2024):
+    for year in tqdm.tqdm(range(start_year, end_year), desc='Processing files', ascii=True):
         year_folder = os.path.join(input_folder, str(year))
         output_file = rf'C:\Users\Ankit\Documents\Vedanshi\nc_merged\merged_noaa\{year}.nc'
         preprocess_crop_and_merge(year_folder, output_file)
@@ -85,3 +85,6 @@ def merge_netCDF_files(input_folder, output_file):
     combined_ds.to_netcdf(output_file)
     for ds in datasets:  # Close all datasets to free up resources
         ds.close()
+    print(f"Saved combined dataset to a single file")
+
+merge_netCDF_files(r'C:\Users\Ankit\Documents\Vedanshi\nc_merged\merged_noaa', r'C:\Users\Ankit\Documents\Vedanshi\nc_merged\CROWN.nc')
