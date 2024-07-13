@@ -13,7 +13,7 @@ import warnings
 from xarray.coding.variables import SerializationWarning
 import tqdm
 
-def preprocess_crop_and_merge(input_folder, output_file, lat_min=32.324276, lat_max=37.370157, lon_min=72.048340, lon_max=80.727539):
+def preprocess_crop_and_merge(input_folder, output_file, lat_min=29.375, lat_max=37.875, lon_min=71.875, lon_max=80.375):
     # PERSIANN-CDR_v01r01_
     file_pattern = os.path.join(input_folder, 'PERSIANN-CDR_v01r01_*.nc')
     files = sorted(glob.glob(file_pattern))

@@ -135,3 +135,22 @@ def interpolate(initial_res_points, data, coords, method_used):
         return interpolator(coords)
     else:
         raise ValueError("Invalid method. Supported methods are 'linear', 'nearest', and 'cubic'.")
+    
+# from interpolating.py
+def save_images(self, interpolated_data, output_folder):
+    '''this method will save the images in the output folder'''
+    # Create the output folder if it does not exist
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    
+    # Loop through each time step and save the image
+    for i, data in tqdm(enumerate(interpolated_data), total=len(interpolated_data)):
+        # Normalize the data to be in the range 0-255
+        data_normalized = (255 * (data - np.min(data)) / (np.ptp(data))).astype(np.uint8)
+        
+        # Create an Image object from the data
+        image = PIL.Image.fromarray(data_normalized)
+        #showing the image
+        image
+        # Save the image
+        image.save(os.path.join(output_folder, f'image_{i}.png'))
