@@ -55,7 +55,7 @@ class Interpolate:
         unique_lats = np.sort(inter_points['lat'].unique())
         unique_lons = np.sort(inter_points['lon'].unique())
 
-        return unique_lats,unique_lons
+        return inter_lon,inter_lat
     
     def visualize_res_change(self, data_pth):
         ds=xr.open_dataset(data_pth)
@@ -86,11 +86,11 @@ class Interpolate:
         plt.tight_layout()
         plt.show()    
 
+obj=Interpolate()
 
 class image_interpolation():
     
-    obj=Interpolate()
-
+    
     def make_image(self,data_pth):
         # Load the dataset
         ds = xr.open_dataset(data_pth)
@@ -165,7 +165,10 @@ class image_interpolation():
         print(f"Interpolated data saved to {save_path}")
     
 
-    def show_images(self, images, precipitation_values, num_samples=5):
+    def show_images(self, images, dataset, num_samples=5):
+
+        # Get the precipitation values from the dataset
+        precipitation_values = dataset['data'].values
         sample_indices = np.linspace(0, len(precipitation_values) - 1, num_samples, dtype=int)
         
         # Display the images
