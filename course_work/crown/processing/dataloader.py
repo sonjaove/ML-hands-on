@@ -1,66 +1,59 @@
-import xarray as xr
-import matplotlib.pyplot as plt
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, SubsetRandomSampler
+from PIL import Image
 import numpy as np
-
-# Step 1: Create viridis plot from xarray
-def plot_xarray(xr_data):
-    plt.figure(figsize=(10, 8))
-    xr_data.plot.imshow(cmap='viridis')
-    plt.title('Viridis Plot of Xarray Data')
-    plt.show()
-
-# Step 2 & 3: Convert xarray to PyTorch tensor and create a custom Dataset
-class XarrayDataset(Dataset):
-    def __init__(self, xr_data):
-        self.data = torch.tensor(xr_data.values, dtype=torch.float32)
+class ImageDataset(Dataset):
+    def __init__(self, images):
+        self.images = images
         
     def __len__(self):
-        return self.data.shape[0]
+        return len(self.images)
     
     def __getitem__(self, idx):
-        return self.data[idx]
+        image = self.images[idx]
+        # Convert image to tensor and normalize if needed
+        image_tensor = torch.tensor(np.array(image), dtype=torch.float32).unsqueeze(0)  # Assuming grayscale images
+        return image_tensor
 
-# Step 4: Create a DataLoader
-def create_dataloader(xr_data, batch_size=32):
-    dataset = XarrayDataset(xr_data)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+def create_dataloader(images, batch_size=32, shuffle=True):
+    dataset = ImageDataset(images)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
-# Step 5: Save the DataLoader
 def save_dataloader(dataloader, filepath):
     torch.save(dataloader.dataset, filepath)
 
-# Function to load the saved DataLoader
-def load_dataloader(filepath, batch_size=32):
+def load_dataloader(filepath, batch_size=32, shuffle=True):
     dataset = torch.load(filepath)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
-# Main process
-def process_xarray(xr_data, save_path, batch_size=32):
-    # Plot the xarray data
-    plot_xarray(xr_data)
+def split_train_test(images, train_split=0.8):
+    # Split images into train and test sets
+    num_images = len(images)
+    indices = list(range(num_images))
+    split = int(np.floor(train_split * num_images))
+    np.random.shuffle(indices)
     
-    # Create and save DataLoader
-    dataloader = create_dataloader(xr_data, batch_size)
-    save_dataloader(dataloader, save_path)
+    train_indices, test_indices = indices[:split], indices[split:]
+    train_images = [images[i] for i in train_indices]
+    test_images = [images[i] for i in test_indices]
     
-    print(f"DataLoader saved to {save_path}")
-    
-    # Demonstrate loading
-    loaded_dataloader = load_dataloader(save_path, batch_size)
-    print("DataLoader successfully loaded")
-    
-    return loaded_dataloader
+    return train_images, test_images
 
-# Usage
-if __name__ == "__main__":
-    # Assuming you have an xarray DataArray named 'xr_data'
-    # xr_data = xr.DataArray(...)
+def process_images(images, save_path, batch_size=32,split_ratio=0.8):
+    # Split images into train and test sets
+    train_images, test_images = split_train_test(images,split_ratio)
     
-    save_path = 'path/to/save/dataloader.pth'
-    batch_size = 32
+    # Create and save train DataLoader
+    train_dataloader = create_dataloader(train_images, batch_size, shuffle=True)
+    train_save_path = save_path + '_train.pth'
+    save_dataloader(train_dataloader, train_save_path)
+    print(f"Train DataLoader saved to {train_save_path}")
     
-    loaded_dataloader = process_xarray(xr_data, save_path, batch_size)
+    # Create and save test DataLoader
+    test_dataloader = create_dataloader(test_images, batch_size, shuffle=False)
+    test_save_path = save_path + '_test.pth'
+    save_dataloader(test_dataloader, test_save_path)
+    print(f"Test DataLoader saved to {test_save_path}")
     
-    # You can now use the loaded_dataloader in your PyTorch training loop
+    #return train_dataloader, test_dataloader
+

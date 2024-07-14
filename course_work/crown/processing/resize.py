@@ -58,14 +58,14 @@ class Resize:
         else:
             print("The resolution change is exact.")
 
-        # Generate x-values for the input resolution grid
+        # Generate x-values for the input resolution grid (longitude)
         x_values = []
         current_x = minx
         while current_x < maxx:
             x_values.append(current_x)
             current_x += input_res
         
-        # Generate y-values for the input resolution grid
+        # Generate y-values for the input resolution grid (latitude)
         y_values = []
         current_y = miny
         while current_y < maxy:
@@ -120,30 +120,65 @@ class Resize:
         print(f"\ndims of {input_res} grid= ",(((max(yc)- min(yc)) //input_res,(max(xc) - min(xc)) //input_res)))
         extent_calculator = lambda crs_from, crs_to, coords: print(f"Extent in y and x (in km): {' '.join(str((max(c) - min(c))/1000) for c in zip(*Transformer.from_crs(crs_from, crs_to).transform(*zip(*coords))))}")
         extent_calculator(crs, 3857, [[miny, maxy], [minx, maxx]])
-        return x,y,x_out,y_out,grid_cell_output
+        #return x,y,x_out,y_out,grid_cell_output
 
-    def fitting_grid(self,basin_file, bound_box:tuple, input_res=0.25, output_res=0.1):
-        basin=gpd.read_file(basin_file)
-        box=basin.total_bounds
-        bound_box+=input_res
-        dif=box-bound_box
-        if dif!=0:
-            for idx, difs in enumerate(dif):
-                if dif > 0:
-                    bound_box[idx] -= difs
-                else:
-                    bound_box[idx] += difs
-        if __name__ == "__main__":
-            xc_inp,yc_inp,xc_out,yc_out,grids=self.res_change(bound_box[0], bound_box[1], bound_box[2], bound_box[3], input_res, output_res,crs=basin.crs.to_epsg())
-        grid=[]
-        for cell in grids:
-            polygon = shapely.geometry.Polygon(list(zip(cell['X'], cell['Y'])))
-            grid.append(polygon)
+    def res_change_general(self,minx, miny, maxx, maxy, input_res, output_res,crs=4326):
 
-        grid_gdf = gpd.GeoDataFrame({'geometry': grid}, crs=basin.crs)
-        fig, ax = plt.subplots()
-        ax.scatter(xc_out, yc_out, s=1, color='black')
-        grid_gdf.boundary.plot(ax=ax, color='blue', label='grid cells')
-        basin.boundary.plot(ax=ax, color='red',label='basin')
-        plt.legend()
-        plt.show()
+        if ((maxx-minx)*(maxy-miny)!=((input_res/output_res)**2)*(maxx-minx)*(maxy-miny)):
+            print("The resolution change is not exact.")
+            #back_calc((minx, miny, maxx, maxy))
+            
+        else:
+            print("The resolution change is exact.")
+
+        # Generate x-values for the input resolution grid
+        x_values = []
+        current_x = minx
+        while current_x < maxx:
+            x_values.append(current_x)
+            current_x += input_res
+        
+        # Generate y-values for the input resolution grid
+        y_values = []
+        current_y = miny
+        while current_y < maxy:
+            y_values.append(current_y)
+            current_y += input_res
+        
+        x_values = np.array(x_values, dtype=float)
+        y_values = np.array(y_values, dtype=float)
+        
+        grid_cell = self.initialize_and_populate_grid(x_values, y_values)
+
+        #making the meshgrid for the input resolution grid (not the centroids)
+        x = [i['Xc'] for i in grid_cell]
+        y = [i['Yc'] for i in grid_cell]
+        x, y = np.meshgrid(x, y)
+        
+        # Generate x-values for the output resolution grid
+        x_values_output = []
+        current_x_output = minx
+        while current_x_output < maxx:
+            x_values_output.append(current_x_output)
+            current_x_output += output_res
+        
+        # Generate y-values for the output resolution grid
+        y_values_output = []
+        current_y_output = miny
+        while current_y_output < maxy:
+            y_values_output.append(current_y_output)
+            current_y_output += output_res
+        
+        x_values_output = np.array(x_values_output, dtype=float)
+        y_values_output = np.array(y_values_output, dtype=float)
+        
+        grid_cell_output = self.initialize_and_populate_grid(x_values_output, y_values_output)
+        x_out = [i['Xc'] for i in grid_cell_output]
+        y_out = [i['Yc'] for i in grid_cell_output]
+        x_out, y_out = np.meshgrid(x_out, y_out)
+        
+        print("dims of grid= ",(((y_out[len(y_out)-1][0] - y_out[0][0]) // 0.1,(x_out[0][len(x_out[0])-1] - x_out[0][0]) // 0.1)))
+        print("dims of grid= ",(((y[len(y)-1][0] - y[0][0]) //0.25,(x[0][len(x[0])-1] - x[0][0]) //0.25)))
+        extent_calculator = lambda crs_from, crs_to, coords: print(f"Extent in y and x (in km): {' '.join(str((max(c) - min(c))/1000) for c in zip(*Transformer.from_crs(crs_from, crs_to).transform(*zip(*coords))))}")
+        extent_calculator(crs, 3857, [[miny, maxy], [minx, maxx]])
+        return x_values_output,y_values_output

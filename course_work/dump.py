@@ -154,3 +154,152 @@ def save_images(self, interpolated_data, output_folder):
         image
         # Save the image
         image.save(os.path.join(output_folder, f'image_{i}.png'))
+
+#fitting the basin/map in the grid, taken from resize.py
+    def fitting_grid(self,basin_file, bound_box:tuple, input_res=0.25, output_res=0.1):
+        basin=gpd.read_file(basin_file)
+        box=basin.total_bounds
+        bound_box+=input_res
+        dif=box-bound_box
+        if dif!=0:
+            for idx, difs in enumerate(dif):
+                if dif > 0:
+                    bound_box[idx] -= difs
+                else:
+                    bound_box[idx] += difs
+        if __name__ == "__main__":
+            xc_inp,yc_inp,xc_out,yc_out,grids=self.res_change(bound_box[0], bound_box[1], bound_box[2], bound_box[3], input_res, output_res,crs=basin.crs.to_epsg())
+        grid=[]
+        for cell in grids:
+            polygon = shapely.geometry.Polygon(list(zip(cell['X'], cell['Y'])))
+            grid.append(polygon)
+
+        grid_gdf = gpd.GeoDataFrame({'geometry': grid}, crs=basin.crs)
+        fig, ax = plt.subplots()
+        ax.scatter(xc_out, yc_out, s=1, color='black')
+        grid_gdf.boundary.plot(ax=ax, color='blue', label='grid cells')
+        basin.boundary.plot(ax=ax, color='red',label='basin')
+        plt.legend()
+        plt.show()
+
+
+
+import xarray as xr
+import torch
+from torch.utils.data import Dataset, DataLoader
+from PIL import Image
+import numpy as np
+
+# Step 1: Create viridis plot from xarray using PIL instead of matplotlib
+def plot_xarray_with_pil(xr_data, save_path):
+    data_array = xr_data.values
+    # Normalize data for image representation
+    normalized_data = (data_array - np.min(data_array)) / (np.max(data_array) - np.min(data_array))
+    img = Image.fromarray(np.uint8(plt.cm.viridis(normalized_data)*255))
+    img.save(save_path)
+
+
+
+# Step 2 & 3: Convert xarray to PyTorch tensor and create a custom Dataset using PIL 
+class XarrayDataset(Dataset):
+    def __init__(self, xr_data):
+        self.data = torch.tensor(xr_data.values, dtype=torch.float32)
+        
+    def __len__(self):
+        return self.data.shape[0]
+    
+    def __getitem__(self, idx):
+        return self.data[idx]
+
+    # Step 4: Create a DataLoader
+    def create_dataloader(xr_data, batch_size=32):
+        dataset = XarrayDataset(xr_data)
+        return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    # Step 5: Save the DataLoader
+    def save_dataloader(dataloader, filepath):
+        torch.save(dataloader.dataset, filepath)
+
+    # Function to load the saved DataLoader
+    def load_dataloader(filepath, batch_size=32):
+        dataset = torch.load(filepath)
+        return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    # Main process
+    def process_xarray_with_pil(xr_data, save_path, batch_size=32, image_save_path='viridis_plot.png'):
+        # Plot the xarray data using PIL and save the image
+        plot_xarray_with_pil(xr_data, image_save_path)
+        
+        # Create and save DataLoader
+        dataloader = create_dataloader(xr_data, batch_size)
+        save_dataloader(dataloader, save_path)
+        
+        print(f"DataLoader saved to {save_path}")
+        print(f"Viridis plot saved to {image_save_path}")
+        
+        # Demonstrate loading
+        loaded_dataloader = load_dataloader(save_path, batch_size)
+        print("DataLoader successfully loaded")
+        
+        return loaded_dataloader
+
+    # Usage
+    if __name__ == "__main__":
+        # Assuming you have an xarray DataArray named 'xr_data'
+        # xr_data = xr.DataArray(...)
+        
+        save_path = 'path/to/save/dataloader.pth'
+        image_save_path = 'path/to/save/viridis_plot.png'
+        batch_size = 32
+        
+        loaded_dataloader = process_xarray_with_pil(xr_data, save_path, batch_size, image_save_path)
+        
+        # You can now use the loaded_dataloader in your PyTorch training loop
+
+
+
+#from interpoalting.py
+
+def interpolate_and_create_image(self,data, old_resolution, new_resolution):
+        # Calculate the zoom factor for interpolation
+        zoom_factor = old_resolution / new_resolution
+
+        # Interpolate the data
+        interpolated_data = zoom(data, zoom_factor, order=3)  # order=3 for cubic interpolation
+
+        # Normalize the interpolated data to be in the range 0-255
+        data_normalized = (255 * (interpolated_data - np.min(interpolated_data)) / np.ptp(interpolated_data)).astype(np.uint8)
+
+        # Create an Image object from the normalized data
+        image = PIL.Image.fromarray(data_normalized)
+
+        return image
+    
+#from interpolating.py
+
+def downscale_images(self,images, old_resolution, new_resolution):
+        downscaled_images = []
+        
+        for image in images:
+            # Convert the image to a numpy array
+            data = np.array(image)
+            
+            # Calculate the zoom factor for downsampling
+            zoom_factor = old_resolution / new_resolution
+
+            # Downscale the data using cubic spline interpolation
+            if len(data.shape) == 3:  # For RGB images
+                downscaled_data = np.stack([zoom(data[:, :, i], zoom_factor, order=3) for i in range(data.shape[2])], axis=2)
+            else:  # For grayscale images
+                downscaled_data = zoom(data, zoom_factor, order=3)
+
+            # Convert downscaled data back to uint8 (optional step)
+            downscaled_data = downscaled_data.astype(np.uint8)
+
+            # Create an Image object from the downscaled data
+            downscaled_image = PIL.Image.fromarray(downscaled_data)
+            
+            # Append the downscaled image to the list
+            downscaled_images.append(downscaled_image)
+        
+        return downscaled_images
