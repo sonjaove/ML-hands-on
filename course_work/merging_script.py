@@ -13,7 +13,7 @@ import warnings
 from xarray.coding.variables import SerializationWarning
 import tqdm
 
-def preprocess_crop_and_merge(input_folder, output_file, lat_min=29.375, lat_max=37.875, lon_min=71.875, lon_max=80.375):
+def preprocess_crop_and_merge(input_folder, output_file, lat_min=32, lat_max=41, lon_min=72, lon_max=81):
     # PERSIANN-CDR_v01r01_
     file_pattern = os.path.join(input_folder, 'PERSIANN-CDR_v01r01_*.nc')
     files = sorted(glob.glob(file_pattern))
@@ -87,4 +87,4 @@ def merge_netCDF_files(input_folder, output_file):
         ds.close()
     print(f"Saved combined dataset to a single file")
 
-merge_netCDF_files(r'C:\Users\Ankit\Documents\Vedanshi\nc_merged\merged_noaa', r'C:\Users\Ankit\Documents\Vedanshi\nc_merged\CROWN.nc')
+merge_netCDF_files(r'C:\Users\Ankit\Documents\Vedanshi\nc_merged\merged_noaa', r'C:\Users\Ankit\Documents\Vedanshi\nc_merged\CROWN_1.nc')
