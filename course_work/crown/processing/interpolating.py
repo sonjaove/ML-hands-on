@@ -64,7 +64,7 @@ class Interpolate:
     def show_raw_data( self,data_pth, num_samples=5):
         ds = xr.open_dataset(data_pth)
 
-        precipitation = ds['precipitation'].values
+        precipitation = ds['data'].values
 
         print(f"data shape: {precipitation.shape}")
         print(f"data range: [{precipitation.min()}, {precipitation.max()}]")
