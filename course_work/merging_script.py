@@ -5,6 +5,10 @@ Set an input folder and get an ouput file. if your folder has subfolders for eac
 if not than you'll have to modify the method `for_all_years` to suit your needs, do not mend with the method `preprocess_crop_and_merge`.
 (you can also try using the method `merge_netCDF_files`).'''
 
+
+#3B-DAY.MS.MRG.3IMERG.20000606-S000000-E235959.V07B.nc4.nc4
+#3B-DAY.MS.MRG.3IMERG.20000609-S000000-E235959.V07B.nc4.nc4
+
 import xarray as xr
 import os
 import glob
@@ -15,7 +19,7 @@ import tqdm
 
 def preprocess_crop_and_merge(input_folder, output_file, lat_min=32, lat_max=41, lon_min=72, lon_max=81):
     # PERSIANN-CDR_v01r01_
-    file_pattern = os.path.join(input_folder, 'PERSIANN-CDR_v01r01_*.nc')
+    file_pattern = os.path.join(input_folder, '3B-DAY.MS.MRG.3IMERG.***-S000000-E235959.V07B.nc4.nc4')
     files = sorted(glob.glob(file_pattern))
     
     if not files:
@@ -58,13 +62,14 @@ def preprocess_crop_and_merge(input_folder, output_file, lat_min=32, lat_max=41,
     else:
         print(f"No datasets to concatenate in {input_folder}")
 
-def for_all_the_years(input_folder='C:\\Users\\Ankit\\Documents\\Vedanshi\\nc_files',start_year=2000,end_year=2024):
+
+def for_all_the_years(input_folder='C:\\Users\\Ankit\\Documents\\Vedanshi\\TRMM_Kumar',start_year=2000,end_year=2024):
     for year in tqdm.tqdm(range(start_year, end_year), desc='Processing files', ascii=True):
         year_folder = os.path.join(input_folder, str(year))
-        output_file = rf'C:\Users\Ankit\Documents\Vedanshi\nc_merged\merged_noaa\{year}.nc'
+        output_file = rf'C:\Users\Ankit\Documents\Vedanshi\nc_merged\{year}.nc4'
         preprocess_crop_and_merge(year_folder, output_file)
 
-for_all_the_years()
+#for_all_the_years()
 
 '''this method will merge the data for each year and save it in the output file for the all the years in a single file.
 the input folder should contain merged files of a particular year of all the years.
@@ -72,19 +77,46 @@ the input folder should contain merged files of a particular year of all the yea
 
 A use case is shown in final_merging.ipynb file.'''
 
-def merge_netCDF_files(input_folder, output_file):
+def merge_netCDF_files(input_folder, output_file,lat_min=32, lat_max=41, lon_min=72, lon_max=81):
     # Create a list of all NetCDF files sorted by their filename (assuming filenames contain dates)
-    file_pattern = os.path.join(input_folder, '*.nc')
+    file_pattern = os.path.join(input_folder, '3B-DAY.MS.MRG.3IMERG.***-S000000-E235959.V07B.nc4.nc4')
     files = sorted(glob.glob(file_pattern))
+
+    datasets = []
+    for file in tqdm.tqdm(files, desc='Processing files', ascii=True):
+        with warnings.catch_warnings():
+            # Ignore warnings specific to each dataset load
+            warnings.simplefilter("ignore")
+            ds = xr.open_dataset(file)
+        
+        # Clean up fill values and missing values
+        if 'precipitation' in ds.data_vars:
+            # Ensure that fill values are consistent
+            ds['precipitation'].encoding.pop('missing_value', None)
+            ds['precipitation'].encoding['_FillValue'] = -9999.0
+        
+        # Get the indices using np.where and crop the data
+        lat_indices = np.where((ds.lat >= lat_min) & (ds.lat <= lat_max))[0]
+        lon_indices = np.where((ds.lon >= lon_min) & (ds.lon <= lon_max))[0]
+        ds_cropped = ds.isel(lat=lat_indices, lon=lon_indices)
+        
+        datasets.append(ds_cropped)
     
-    # Load datasets into a list and concatenate them manually
-    datasets = [xr.open_dataset(file) for file in files]
-    combined_ds = xr.concat(datasets, dim='time')
+    # Check if we have datasets to concatenate
+    if datasets:
+        # Concatenate all datasets along the time dimension
+        combined_ds = xr.concat(datasets, dim='time', data_vars='minimal', coords='minimal', compat='override')
 
-    # Save the combined dataset to a new NetCDF file
-    combined_ds.to_netcdf(output_file)
-    for ds in datasets:  # Close all datasets to free up resources
-        ds.close()
-    print(f"Saved combined dataset to a single file")
+        # Handle any potential serialization warnings due to encoding settings when saving
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=SerializationWarning)
+            combined_ds.to_netcdf(output_file)
+        
+        # Close datasets to free up resources
+        for ds in datasets:
+            ds.close()
+    else:
+        print(f"No datasets to concatenate in {input_folder}")
 
-merge_netCDF_files(r'C:\Users\Ankit\Documents\Vedanshi\nc_merged\merged_noaa', r'C:\Users\Ankit\Documents\Vedanshi\nc_merged\CROWN_1.nc')
+
+merge_netCDF_files(r'C:\Users\Ankit\Documents\Vedanshi\TRMM_Kumar', r'C:\Users\Ankit\Documents\Vedanshi\nc_merged\CROWN_GT.nc4')

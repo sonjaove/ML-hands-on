@@ -111,44 +111,47 @@ class image_interpolation():
         return images
     
     
-    def interpolate_images(self,images, old_resolution, new_resolution):
-        interpolated_images = []
+    def interpolate_precipitation_data(self, nc_file_path, old_resolution, new_resolution):
+        # Load the NetCDF dataset
+        ds = xr.open_dataset(nc_file_path)
         
-        for image in images:
-            # Convert the image to a numpy array
-            data = np.array(image)
-            
-            # Calculate the zoom factor for interpolation
-            zoom_factor = old_resolution / new_resolution
-
-            # Interpolate the data with cubic spline interpolation
-            if len(data.shape) == 3:  # For RGB images
-                interpolated_data = np.stack([zoom(data[:, :, i], zoom_factor, order=3) for i in range(data.shape[2])], axis=2)
-            else:  # For grayscale images
+        # Extract precipitation data
+        precipitation_data = ds['precipitation'].values
+        
+        # Print out the shape of precipitation_data to debug
+        print(f"Precipitation data shape: {precipitation_data.shape}")
+        
+        # Calculate the zoom factor for interpolation (for downscalling, this can also be used for upscalling)
+        zoom_factor = old_resolution / new_resolution
+        
+        # Interpolate the data with cubic spline interpolation
+        interpolated_precipitation_data = []
+        
+        if len(precipitation_data.shape) == 3:
+            # Iterate over time steps if there are multiple
+            for data in precipitation_data:
                 interpolated_data = zoom(data, zoom_factor, order=3)
-
-            # Convert interpolated data back to uint8 (optional step)
-            interpolated_data = interpolated_data.astype(np.uint8)
-
-            # Create an Image object from the interpolated data
-            interpolated_image = PIL.Image.fromarray(interpolated_data)
-            
-            # Append the interpolated image to the list
-            interpolated_images.append(interpolated_image)
+                # Set negative values to 0
+                interpolated_data[interpolated_data < 0] = 0
+                interpolated_precipitation_data.append(interpolated_data)
+        else:
+            # Handle single time step case
+            interpolated_precipitation_data = zoom(precipitation_data, zoom_factor, order=3)
+            # Set negative values to 0
+            interpolated_precipitation_data[interpolated_precipitation_data < 0] = 0
         
-        return interpolated_images,interpolated_data
-    
+        return np.array(interpolated_precipitation_data)
+
+
     def save_xarray(self,interpolated_data,data_pth,save_path):	
         # Load the dataset
         ds = xr.open_dataset(data_pth)
         start_date = ds['time'].values[0]
         end_date = ds['time'].values[-1]
 
-        
-        step = len(np.unique(ds['lat'].values)) * len(np.unique(ds['lon'].values))
-        inter_lon,inter_lat= obj.getting_points(data_pth)	
-
-        
+        lat = ds['lat'].values
+        lon=ds['lon'].values
+        inter_lat,inter_lon=np.meshgrid(np.arange(lat.min(),lat.max(),0.1),np.arange(lon.min(),lon.max(),0.1))
         # Create a DataArray from the interpolated data
         date_range = pd.date_range(start=start_date, end=end_date, freq='D')
 
@@ -165,11 +168,11 @@ class image_interpolation():
         print(f"Interpolated data saved to {save_path}")
     
 
-    def show_images(self, images, dataset, num_samples=5):
+    def show_images(self, interpolated_data, num_samples=5):
 
         # Get the precipitation values from the dataset
-        precipitation_values = dataset['data'].values
-        sample_indices = np.linspace(0, len(precipitation_values) - 1, num_samples, dtype=int)
+        #precipitation_values = dataset['data'].values
+        sample_indices = np.linspace(0, len(interpolated_data) -1, num_samples, dtype=int)
         
         # Display the images
         fig, axes = plt.subplots(1, num_samples, figsize=(20, 4))
@@ -178,10 +181,10 @@ class image_interpolation():
 
         for i, idx in enumerate(sample_indices):
             ax = axes[i]
-            im = ax.imshow(images[idx], cmap='viridis', vmin=np.min(precipitation_values[idx]), vmax=np.max(precipitation_values[idx]))
+            im = ax.imshow(interpolated_data[idx], cmap='viridis')
             ax.set_title(f'Image {idx}')
             ax.axis('off')
-            plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label='Precipitation Value')
+            plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04 )
 
         plt.tight_layout()
         plt.show()
