@@ -17,9 +17,9 @@ import warnings
 from xarray.coding.variables import SerializationWarning
 import tqdm
 
-def preprocess_crop_and_merge(input_folder, output_file, lat_min=32, lat_max=41, lon_min=72, lon_max=81):
+def preprocess_crop_and_merge(input_folder, output_file, lat_min=32, lat_max=24, lon_min=72, lon_max=80):
     # PERSIANN-CDR_v01r01_
-    file_pattern = os.path.join(input_folder, '3B-DAY.MS.MRG.3IMERG.***-S000000-E235959.V07B.nc4.nc4')
+    file_pattern = os.path.join(input_folder, 'IMERG******precip.nc4')
     files = sorted(glob.glob(file_pattern))
     
     if not files:
@@ -63,7 +63,7 @@ def preprocess_crop_and_merge(input_folder, output_file, lat_min=32, lat_max=41,
         print(f"No datasets to concatenate in {input_folder}")
 
 
-def for_all_the_years(input_folder='C:\\Users\\Ankit\\Documents\\Vedanshi\\TRMM_Kumar',start_year=2000,end_year=2024):
+def for_all_the_years(input_folder='C:\\Users\\Ankit\\Documents\\Vedanshi\\TRMM_Kumar',start_year=2013,end_year=2024):
     for year in tqdm.tqdm(range(start_year, end_year), desc='Processing files', ascii=True):
         year_folder = os.path.join(input_folder, str(year))
         output_file = rf'C:\Users\Ankit\Documents\Vedanshi\nc_merged\{year}.nc4'
@@ -77,9 +77,9 @@ the input folder should contain merged files of a particular year of all the yea
 
 A use case is shown in final_merging.ipynb file.'''
 
-def merge_netCDF_files(input_folder, output_file,lat_min=32, lat_max=41, lon_min=72, lon_max=81):
+def merge_netCDF_files(input_folder, output_file,lat_min=32, lat_max=24, lon_min=72, lon_max=80):
     # Create a list of all NetCDF files sorted by their filename (assuming filenames contain dates)
-    file_pattern = os.path.join(input_folder, '3B-DAY.MS.MRG.3IMERG.***-S000000-E235959.V07B.nc4.nc4')
+    file_pattern = os.path.join(input_folder, 'IMERG******precip.nc4')
     files = sorted(glob.glob(file_pattern))
 
     datasets = []
@@ -119,4 +119,4 @@ def merge_netCDF_files(input_folder, output_file,lat_min=32, lat_max=41, lon_min
         print(f"No datasets to concatenate in {input_folder}")
 
 
-merge_netCDF_files(r'C:\Users\Ankit\Documents\Vedanshi\TRMM_Kumar', r'C:\Users\Ankit\Documents\Vedanshi\nc_merged\CROWN_GT.nc4')
+merge_netCDF_files(r'F:\TANISHQ\IMERG_DATA', r'F:\TANISHQ\IMERG_DATA\CROWN_GT.nc4')
