@@ -17,9 +17,9 @@ import warnings
 from xarray.coding.variables import SerializationWarning
 import tqdm
 
-def preprocess_crop_and_merge(input_folder, output_file, lat_min=32, lat_max=24, lon_min=72, lon_max=80):
+def preprocess_crop_and_merge(input_folder, output_file, lat_min=24, lat_max=32, lon_min=72, lon_max=80):
     # PERSIANN-CDR_v01r01_
-    file_pattern = os.path.join(input_folder, 'IMERG******precip.nc4')
+    file_pattern = os.path.join(input_folder, 'PERSIANN-CDR_v01r01_***.nc')
     files = sorted(glob.glob(file_pattern))
     
     if not files:
@@ -63,10 +63,10 @@ def preprocess_crop_and_merge(input_folder, output_file, lat_min=32, lat_max=24,
         print(f"No datasets to concatenate in {input_folder}")
 
 
-def for_all_the_years(input_folder='C:\\Users\\Ankit\\Documents\\Vedanshi\\TRMM_Kumar',start_year=2013,end_year=2024):
+def for_all_the_years(input_folder=r'F:\TANISHQ\PERCDR data',start_year=2013,end_year=2024):
     for year in tqdm.tqdm(range(start_year, end_year), desc='Processing files', ascii=True):
         year_folder = os.path.join(input_folder, str(year))
-        output_file = rf'C:\Users\Ankit\Documents\Vedanshi\nc_merged\{year}.nc4'
+        output_file = rf'F:\TANISHQ\PERCDR merged\{year}.nc'
         preprocess_crop_and_merge(year_folder, output_file)
 
 #for_all_the_years()
@@ -77,11 +77,55 @@ the input folder should contain merged files of a particular year of all the yea
 
 A use case is shown in final_merging.ipynb file.'''
 
-def merge_netCDF_files(input_folder, output_file,lat_min=32, lat_max=24, lon_min=72, lon_max=80):
-    # Create a list of all NetCDF files sorted by their filename (assuming filenames contain dates)
-    file_pattern = os.path.join(input_folder, 'IMERG******precip.nc4')
+def merge_netCDF_files(input_folder, output_file, lat_min=24, lat_max=32, lon_min=72, lon_max=80):
+    file_pattern = os.path.join(input_folder, 'IMERG***precip.nc4')
     files = sorted(glob.glob(file_pattern))
 
+    if not files:
+        print(f"No files found in {input_folder}")
+        return
+
+    datasets = []
+    for file in tqdm.tqdm(files, desc='Processing files', ascii=True):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            ds = xr.open_dataset(file)
+
+        if 'precipitation' in ds.data_vars:
+            ds['precipitation'].encoding.pop('missing_value', None)
+            ds['precipitation'].encoding['_FillValue'] = -9999.0
+
+        lat_indices = np.where((ds.lat >= lat_min) & (ds.lat <= lat_max))[0]
+        lon_indices = np.where((ds.lon >= lon_min) & (ds.lon <= lon_max))[0]
+        ds_cropped = ds.isel(lat=lat_indices, lon=lon_indices)
+
+        datasets.append(ds_cropped)
+
+    if datasets:
+        # Get the common latitude and longitude values
+        common_lat = np.unique(np.concatenate([ds.lat.values for ds in datasets]))
+        common_lon = np.unique(np.concatenate([ds.lon.values for ds in datasets]))
+
+        # Reindex all datasets to the common latitude and longitude values
+        reindexed_datasets = [ds.reindex(lat=common_lat, lon=common_lon, method='nearest') for ds in datasets]
+
+        # Concatenate all datasets along the time dimension
+        combined_ds = xr.concat(reindexed_datasets, dim='time', data_vars='minimal', coords='minimal', compat='override')
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=SerializationWarning)
+            combined_ds.to_netcdf(output_file)
+
+        for ds in datasets:
+            ds.close()
+    else:
+        print(f"No datasets to concatenate in {input_folder}")
+
+'''the merge_files pairs with the method preprocess_crop_and_merge, it will merge the files in the input folder and save it in the output file.'''
+
+def merge_files(input_folder,output_file):
+    file_pattern = os.path.join(input_folder, '****.nc')
+    files = sorted(glob.glob(file_pattern))
     datasets = []
     for file in tqdm.tqdm(files, desc='Processing files', ascii=True):
         with warnings.catch_warnings():
@@ -94,13 +138,7 @@ def merge_netCDF_files(input_folder, output_file,lat_min=32, lat_max=24, lon_min
             # Ensure that fill values are consistent
             ds['precipitation'].encoding.pop('missing_value', None)
             ds['precipitation'].encoding['_FillValue'] = -9999.0
-        
-        # Get the indices using np.where and crop the data
-        lat_indices = np.where((ds.lat >= lat_min) & (ds.lat <= lat_max))[0]
-        lon_indices = np.where((ds.lon >= lon_min) & (ds.lon <= lon_max))[0]
-        ds_cropped = ds.isel(lat=lat_indices, lon=lon_indices)
-        
-        datasets.append(ds_cropped)
+            datasets.append(ds)
     
     # Check if we have datasets to concatenate
     if datasets:
@@ -118,5 +156,4 @@ def merge_netCDF_files(input_folder, output_file,lat_min=32, lat_max=24, lon_min
     else:
         print(f"No datasets to concatenate in {input_folder}")
 
-
-merge_netCDF_files(r'F:\TANISHQ\IMERG_DATA', r'F:\TANISHQ\IMERG_DATA\CROWN_GT.nc4')
+merge_netCDF_files(r'F:\TANISHQ\IMERG_DATA', r'F:\TANISHQ\hr_0.1_GT.nc4')
