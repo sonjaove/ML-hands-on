@@ -303,3 +303,45 @@ def downscale_images(self,images, old_resolution, new_resolution):
             downscaled_images.append(downscaled_image)
         
         return downscaled_images
+
+
+
+
+## from checkpoints.ipynb
+import matplotlib.pyplot as plt
+import torchvision.transforms as transforms
+
+def visualize_lr_hr_pair(lr_image, hr_image, num_pairs=3):
+    # Convert tensors to PIL images
+    to_pil = transforms.ToPILImage()
+    
+    fig, axes = plt.subplots(num_pairs, 2, figsize=(10, 5*num_pairs))
+    
+    for i in range(num_pairs):
+        if i < len(lr_image):
+            # Display LR image
+            axes[i, 0].imshow(to_pil(lr_image[i]))
+            axes[i, 0].set_title(f'LR Image {i+1}')
+            axes[i, 0].axis('off')
+            
+            # Display HR image
+            axes[i, 1].imshow(to_pil(hr_image[i]))
+            axes[i, 1].set_title(f'HR Image {i+1}')
+            axes[i, 1].axis('off')
+    
+    plt.tight_layout()
+    plt.show()
+
+
+# Example usage
+from dataloader_1 import process_images
+if __name__ == "__main__":
+    # Example with directories
+    lr_input = images
+    hr_input = interpolated_images
+    save_path = r"C:\Users\Ankit\Documents\Vedanshi\ML-hands-on\course_work\crown\data"
+    batch_size = 64
+    tts_ratio = 0.9
+
+    train_loader, test_loader = process_images(lr_input, hr_input, save_path, batch_size=batch_size, tts_ratio=tts_ratio)
+
