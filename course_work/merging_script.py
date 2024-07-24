@@ -5,6 +5,7 @@ Set an input folder and get an ouput file. if your folder has subfolders for eac
 if not than you'll have to modify the method `for_all_years` to suit your needs, do not mend with the method `preprocess_crop_and_merge`.
 (you can also try using the method `merge_netCDF_files`).'''
 
+'''link for crowm coords = https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.mapsofindia.com%2Flat_long%2Fjammuandkashmir%2F&psig=AOvVaw2SqAQ1L_Np8phb0ZeRx1f4&ust=1721922828351000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCICw3MWEwIcDFQAAAAAdAAAAABAE'''
 
 #3B-DAY.MS.MRG.3IMERG.20000606-S000000-E235959.V07B.nc4.nc4
 #3B-DAY.MS.MRG.3IMERG.20000609-S000000-E235959.V07B.nc4.nc4
@@ -17,7 +18,7 @@ import warnings
 from xarray.coding.variables import SerializationWarning
 import tqdm
 
-def preprocess_crop_and_merge(input_folder, output_file, lat_min=24, lat_max=32, lon_min=72, lon_max=80):
+def preprocess_crop_and_merge(input_folder, output_file, lat_min=29, lat_max=37, lon_min=72, lon_max=80):
     # PERSIANN-CDR_v01r01_
     file_pattern = os.path.join(input_folder, 'PERSIANN-CDR_v01r01_***.nc')
     files = sorted(glob.glob(file_pattern))
@@ -77,7 +78,7 @@ the input folder should contain merged files of a particular year of all the yea
 
 A use case is shown in final_merging.ipynb file.'''
 
-def merge_netCDF_files(input_folder, output_file, lat_min=24, lat_max=32, lon_min=72, lon_max=80):
+def merge_netCDF_files(input_folder, output_file, lat_min=29, lat_max=37, lon_min=72, lon_max=80):
     file_pattern = os.path.join(input_folder, 'IMERG***precip.nc4')
     files = sorted(glob.glob(file_pattern))
 
@@ -156,4 +157,4 @@ def merge_files(input_folder,output_file):
     else:
         print(f"No datasets to concatenate in {input_folder}")
 
-merge_netCDF_files(r'F:\TANISHQ\IMERG_DATA', r'F:\TANISHQ\hr_0.1_GT.nc4')
+merge_netCDF_files(r'F:\TANISHQ\IMERG_DATA', r'F:\TANISHQ\hr_0.1_GT.nc')
