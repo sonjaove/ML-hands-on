@@ -181,4 +181,4 @@ class Resize:
         print("dims of grid= ",(((y[len(y)-1][0] - y[0][0]) //0.25,(x[0][len(x[0])-1] - x[0][0]) //0.25)))
         extent_calculator = lambda crs_from, crs_to, coords: print(f"Extent in y and x (in km): {' '.join(str((max(c) - min(c))/1000) for c in zip(*Transformer.from_crs(crs_from, crs_to).transform(*zip(*coords))))}")
         extent_calculator(crs, 3857, [[miny, maxy], [minx, maxx]])
-        return x_values_output,y_values_output
+        return np.meshgrid(x_values,y_values),np.meshgrid(x_values_output,y_values_output)
