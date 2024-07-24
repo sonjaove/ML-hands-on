@@ -2,11 +2,13 @@
 this script will interpolate the values from 0.25 to 0.1 resolution and save the images in the output folder, the methhods here in the class:
 1. interpolate_values: this method will interpolate the values from 0.25 to 0.1 using the fed data
 2. save_images: this method will save the images in the output folder'''
+
+
 #importing the required libraries
 import xarray as xr
-#import scipy.interpolate as sci
+import scipy.interpolate as sci
 from tqdm import tqdm
-#from resize import Resize
+from resize import Resize
 import numpy as np
 import matplotlib.pyplot as plt
 import PIL
@@ -19,7 +21,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from scipy.ndimage import gaussian_filter
 
-#process=Resize()
+process=Resize()
 class interpolate():
     
     def make_image(self,data_pth):
@@ -109,7 +111,53 @@ class interpolate():
 
         print(f"Images saved to {output_folder}")
 
-    def show_data_with_boundary(self,interpolated_data, num_samples=5, minx=72, miny=24, maxx=80, maxy=32):
+    def resample(self,lr_pth,hr_pth,minx=72, miny=29, maxx=80, maxy=37,input_res=0.25,output_res=0.1):
+        #we interpolate both the data points to thier respective grids.
+        lr=xr.open_dataset(lr_pth)
+        hr=xr.open_dataset(hr_pth)
+
+        #getting the data.
+        data_hr_name = max(hr.data_vars, key=lambda var: hr[var].size)
+        data_lr_name = max(lr.data_vars, key=lambda var: lr[var].size)
+        x_lr_og=lr['lon'].values
+        y_lr_og=lr['lat'].values
+        x_hr_og=hr['lon'].values
+        y_hr_og=hr['lat'].values
+        x_og,y_og=np.meshgrid(x_lr_og,y_lr_og)
+        points_25=np.column_stack((x_og.ravel(),y_og.ravel()))
+        x_new,y_new=np.meshgrid(x_hr_og,y_hr_og)
+        points_10=np.column_stack((x_new.ravel(),y_new.ravel()))
+
+        precipitation_hr = hr[data_hr_name].values
+        precipitation_lr = lr[data_lr_name].values    
+
+        #making the grid points.(directly meshgrided points form the method)
+        (x_lr,y_lr),(x_hr,y_hr)=process.res_change_general(minx,miny,maxx,maxy,input_res,output_res)
+        xi_25=np.column_stack((x_lr.ravel(),y_lr.ravel()))
+        xi_10=np.column_stack((x_hr.ravel(),y_hr.ravel()))
+
+        print("Shapes:")
+        print("points_25:", points_25.shape)
+        print("points_10:", points_10.shape)
+        print("precipitation_lr:", precipitation_lr.shape)
+        print("precipitation_hr:", precipitation_hr.shape)
+        print("xi_25:", xi_25.shape)
+        print("xi_10:", xi_10.shape)
+
+        #performing the interpolation
+        lr_data=[]
+        hr_data=[]
+        for i in range(len(precipitation_lr)):
+            lr_data.append(sci.griddata(points_25,precipitation_lr[i].ravel(),xi_25,'nearest'))
+        for i in range(len(precipitation_hr)):
+            hr_data.append(sci.griddata(points_10,precipitation_hr[i].ravel(),xi_10,'nearest'))
+        
+        lr_data=np.array(lr_data)
+        hr_data=np.array(hr_data)
+
+        return lr_data,hr_data
+
+    def show_data_with_boundary(self,interpolated_data, num_samples=5, minx=72, miny=29, maxx=80, maxy=37):
         # Extract the precipitation data (assuming it's already interpolated and cropped)
         precipitation = np.array(interpolated_data)
 
