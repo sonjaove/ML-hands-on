@@ -24,7 +24,7 @@ from scipy.ndimage import gaussian_filter
 process=Resize()
 class interpolate():
     
-    def make_image(self,data_pth):
+    def make_image(self, data_pth):
         # Load the dataset
         ds = xr.open_dataset(data_pth)
         interpolated_data = np.array(ds['precipitation'].values)
@@ -32,17 +32,31 @@ class interpolate():
 
         # Loop through each time step and save the image
         for i, data in tqdm(enumerate(interpolated_data), total=len(interpolated_data)):
-            # Normalize the data to be in the range 0-255
-            data_normalized = (255 * (data - np.min(data)) / (np.ptp(data))).astype(np.uint8)
-
-            # Create an Image object from the data
-            image = PIL.Image.fromarray(data_normalized)
+            fig, ax = plt.subplots()
             
-            # Add the image to the list
+            # Normalize the data for color mapping
+            data_normalized = (data - np.min(data)) / (np.ptp(data))
+            
+            # Plot the data as an image
+            cax = ax.imshow(data_normalized, cmap='viridis', interpolation='nearest')
+            fig.colorbar(cax)
+            
+            # Overlay the original data values on the image
+            for (j, k), val in np.ndenumerate(data):
+                ax.text(k, j, f'{val:.2f}', ha='center', va='center', color='white')
+            
+            # Remove axes for a cleaner image
+            ax.axis('off')
+            
+            # Save the figure to a PIL image
+            fig.canvas.draw()
+            image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
             images.append(image)
+            
+            plt.close(fig)  # Close the figure to free up memory
 
         return images
-    
+
     
     def interpolate_data(self, nc_file_path, old_resolution, new_resolution):
         # Load the NetCDF dataset
@@ -111,6 +125,7 @@ class interpolate():
 
         print(f"Images saved to {output_folder}")
 
+    #thsi method is not helpign much for the imerge data.
     def resample(self,lr_pth,hr_pth,minx=72, miny=29, maxx=80, maxy=37,input_res=0.25,output_res=0.1):
         #we interpolate both the data points to thier respective grids.
         lr=xr.open_dataset(lr_pth)

@@ -131,14 +131,14 @@ class Resize:
         else:
             print("The resolution change is exact.")
 
-        # Generate x-values for the input resolution grid
+        # Generate x-values for the input resolution grid (here 0.25 degree)
         x_values = []
         current_x = minx
         while current_x < maxx:
             x_values.append(current_x)
             current_x += input_res
         
-        # Generate y-values for the input resolution grid
+        # Generate y-values for the input resolution grid (here 0.25 degree)
         y_values = []
         current_y = miny
         while current_y < maxy:
@@ -150,22 +150,22 @@ class Resize:
         
         grid_cell = self.initialize_and_populate_grid(x_values, y_values)
 
-        #making the meshgrid for the input resolution grid (not the centroids)
+        #making the meshgrid for the input resolution grid
         x = [i['Xc'] for i in grid_cell]
         y = [i['Yc'] for i in grid_cell]
         x, y = np.meshgrid(x, y)
         
-        # Generate x-values for the output resolution grid
+        # Generate x-values for the output resolution grid (here 0.1 degree)
         x_values_output = []
         current_x_output = minx
-        while current_x_output < maxx:
+        while current_x_output <= maxx:
             x_values_output.append(current_x_output)
             current_x_output += output_res
         
-        # Generate y-values for the output resolution grid
+        # Generate y-values for the output resolution grid (here 0.1 degree)
         y_values_output = []
         current_y_output = miny
-        while current_y_output < maxy:
+        while current_y_output <= maxy:
             y_values_output.append(current_y_output)
             current_y_output += output_res
         
