@@ -158,14 +158,14 @@ class Resize:
         # Generate x-values for the output resolution grid (here 0.1 degree)
         x_values_output = []
         current_x_output = minx
-        while current_x_output <= maxx:
+        while current_x_output < maxx:
             x_values_output.append(current_x_output)
             current_x_output += output_res
         
         # Generate y-values for the output resolution grid (here 0.1 degree)
         y_values_output = []
         current_y_output = miny
-        while current_y_output <= maxy:
+        while current_y_output < maxy:
             y_values_output.append(current_y_output)
             current_y_output += output_res
         
