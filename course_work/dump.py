@@ -345,3 +345,48 @@ if __name__ == "__main__":
 
     train_loader, test_loader = process_images(lr_input, hr_input, save_path, batch_size=batch_size, tts_ratio=tts_ratio)
 
+
+'''form preprocessing.py and the resmaple method'''
+
+hr=xr.open_dataset(hr_pth)
+            
+        #getting the data.
+        data_hr_name = max(hr.data_vars, key=lambda var: hr[var].size)
+        data_lr_name = max(lr.data_vars, key=lambda var: lr[var].size)
+        x_lr_og=lr['lon'].values
+        y_lr_og=lr['lat'].values
+        x_hr_og=hr['lon'].values
+        y_hr_og=hr['lat'].values
+        x_og,y_og=np.meshgrid(x_lr_og,y_lr_og)
+        points_25=np.column_stack((x_og.ravel(),y_og.ravel()))
+        x_new,y_new=np.meshgrid(x_hr_og,y_hr_og)
+        points_10=np.column_stack((x_new.ravel(),y_new.ravel()))
+
+        precipitation_hr = hr[data_hr_name].values
+        precipitation_lr = lr[data_lr_name].values    
+
+        #making the grid points.(directly meshgrided points form the method)
+        (x_lr,y_lr),(x_hr,y_hr)=process.res_change_general(minx,miny,maxx,maxy,input_res,output_res)
+        xi_25=np.column_stack((x_lr.ravel(),y_lr.ravel()))
+        xi_10=np.column_stack((x_hr.ravel(),y_hr.ravel()))
+
+        print("Shapes:")
+        print("points_25:", points_25.shape)
+        print("points_10:", points_10.shape)
+        print("precipitation_lr:", precipitation_lr.shape)
+        print("precipitation_hr:", precipitation_hr.shape)
+        print("xi_25:", xi_25.shape)
+        print("xi_10:", xi_10.shape)
+
+        #performing the interpolation
+        lr_data=[]
+        hr_data=[]
+        for i in range(len(precipitation_lr)):
+            lr_data.append(sci.griddata(points_25,precipitation_lr[i].ravel(),xi_25,'nearest'))
+        for i in range(len(precipitation_hr)):
+            hr_data.append(sci.griddata(points_10,precipitation_hr[i].ravel(),xi_10,'nearest'))
+        
+        lr_data=np.array(lr_data)
+        hr_data=np.array(hr_data)
+
+        return lr_data,hr_data
