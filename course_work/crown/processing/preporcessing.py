@@ -20,6 +20,7 @@ import PIL.Image
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from scipy.ndimage import gaussian_filter
+import torch
 
 process=Resize()
 class interpolate():
@@ -126,55 +127,45 @@ class interpolate():
         print(f"Images saved to {output_folder}")
 
     #thsi method is not helpign much for the imerge data.
-    def resample(self,lr_pth,hr_pth,minx=72, miny=29, maxx=80, maxy=37,input_res=0.25,output_res=0.1):
+    def resample(self,lr_pth,old_res=0.25,new_res=0.1):
         #we interpolate both the data points to thier respective grids.
-        lr=xr.open_dataset(lr_pth)
-        hr=xr.open_dataset(hr_pth)
+        #lr=xr.open_dataset(lr_pth)
+        zoom = new_res/old_res
+        if zoom<1: #case of upsmapling
+            return self.interpolate_data(lr_pth,old_res,new_res)  
+        else: #case of downsampling
+           return  self.pooling(lr_pth,old_res,new_res)
+          
+    def pooling(self, data_pth,input_res=0.25,output_res=0.1 ): #will be used for downsampling the images, for now percdr datais used to downsample the data.
+        #loding the data
+        ds = xr.open_dataset(data_pth)
+        data_var_name = max(ds.data_vars, key=lambda var: ds[var].size)
+        precipitation_data = ds[data_var_name].values
 
-        #getting the data.
-        data_hr_name = max(hr.data_vars, key=lambda var: hr[var].size)
-        data_lr_name = max(lr.data_vars, key=lambda var: lr[var].size)
-        x_lr_og=lr['lon'].values
-        y_lr_og=lr['lat'].values
-        x_hr_og=hr['lon'].values
-        y_hr_og=hr['lat'].values
-        x_og,y_og=np.meshgrid(x_lr_og,y_lr_og)
-        points_25=np.column_stack((x_og.ravel(),y_og.ravel()))
-        x_new,y_new=np.meshgrid(x_hr_og,y_hr_og)
-        points_10=np.column_stack((x_new.ravel(),y_new.ravel()))
+        #defining the pooling layer
+        pooling = torch.nn.AvgPool2d(2,2)
+        #convilving the filter on the data
+        interpolated_precipitation_data = []
+        if len(precipitation_data.shape) == 3:
+            # Iterate over time steps if there are multiple
+            for data in precipitation_data:
+                data = torch.tensor(data).unsqueeze(0).unsqueeze(0)
+                interpolated_data = pooling(data).squeeze(0).squeeze(0).numpy()
+                interpolated_precipitation_data.append(interpolated_data)
+        else:
+            # Handle single time step case
+            data = torch.tensor(precipitation_data).unsqueeze(0).unsqueeze(0)
+            interpolated_precipitation_data = pooling(data).squeeze(0).squeeze(0).numpy()
 
-        precipitation_hr = hr[data_hr_name].values
-        precipitation_lr = lr[data_lr_name].values    
+        return np.array(interpolated_precipitation_data)
 
-        #making the grid points.(directly meshgrided points form the method)
-        (x_lr,y_lr),(x_hr,y_hr)=process.res_change_general(minx,miny,maxx,maxy,input_res,output_res)
-        xi_25=np.column_stack((x_lr.ravel(),y_lr.ravel()))
-        xi_10=np.column_stack((x_hr.ravel(),y_hr.ravel()))
 
-        print("Shapes:")
-        print("points_25:", points_25.shape)
-        print("points_10:", points_10.shape)
-        print("precipitation_lr:", precipitation_lr.shape)
-        print("precipitation_hr:", precipitation_hr.shape)
-        print("xi_25:", xi_25.shape)
-        print("xi_10:", xi_10.shape)
 
-        #performing the interpolation
-        lr_data=[]
-        hr_data=[]
-        for i in range(len(precipitation_lr)):
-            lr_data.append(sci.griddata(points_25,precipitation_lr[i].ravel(),xi_25,'nearest'))
-        for i in range(len(precipitation_hr)):
-            hr_data.append(sci.griddata(points_10,precipitation_hr[i].ravel(),xi_10,'nearest'))
-        
-        lr_data=np.array(lr_data)
-        hr_data=np.array(hr_data)
 
-        return lr_data,hr_data
 
     def show_data_with_boundary(self,interpolated_data, num_samples=5, minx=72, miny=29, maxx=80, maxy=37):
         # Extract the precipitation data (assuming it's already interpolated and cropped)
-        precipitation = np.array(interpolated_data)
+        precipitation = interpolated_data
 
         print(f"Raw data shape: {precipitation.shape}")
         print(f"Raw data range: [{precipitation.min()}, {precipitation.max()}]")
@@ -189,11 +180,11 @@ class interpolate():
 
         for i, ax in zip(sample_indices, axes):
             # Apply Gaussian blur
-            blurred_data = gaussian_filter(precipitation[i], sigma=1.0)
+            #blurred_data = gaussian_filter(precipitation[i], sigma=1.0)
             
             # Plot the blurred image
-            im = ax.imshow(blurred_data, cmap='viridis', extent=[minx, maxx, miny, maxy], transform=ccrs.PlateCarree())
-            ax.set_title(f'Raw - Time step: {i} (Blurred)')
+            im = ax.imshow(precipitation[i], cmap='viridis', extent=[minx, maxx, miny, maxy], transform=ccrs.PlateCarree())
+            ax.set_title(f'Raw - Time step: {i}')
             ax.coastlines()
             ax.add_feature(cfeature.BORDERS, linestyle='-', edgecolor='red')
             ax.add_feature(cfeature.STATES, linestyle='-', edgecolor='black')  # Add state boundaries if needed
