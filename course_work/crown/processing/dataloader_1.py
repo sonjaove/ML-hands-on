@@ -30,7 +30,7 @@ class CustomDataset(Dataset):
             lr_image = self.lr_files[idx].convert('RGB')
             hr_image = self.hr_files[idx].convert('RGB')
 
-        lr_image = lr_image.filter(ImageFilter.GaussianBlur(radius=1))
+        #lr_image = lr_image.filter(ImageFilter.GaussianBlur(radius=1))
 
         if self.transform:
             lr_image = self.transform(lr_image)
