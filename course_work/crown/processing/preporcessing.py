@@ -16,7 +16,7 @@ import os
 import pandas as pd
 #from torch.utils.data import Dataset, DataLoader
 from scipy.ndimage import zoom
-import PIL.Image
+import PIL.Image as Image
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from scipy.ndimage import gaussian_filter
@@ -55,6 +55,16 @@ class interpolate():
             images.append(image)
             
             plt.close(fig)  # Close the figure to free up memory
+
+        return images
+    
+    def make_image_from_data(self, data):
+        images = []
+
+        for i,j in tqdm(enumerate(data), total=len(data)):
+            colormap=plt.get_cmap('viridis')
+            rgba_img = colormap(j,bytes=True)[:,:,:3]
+            images.append(Image.fromarray(rgba_img, 'RGB'))
 
         return images
 
