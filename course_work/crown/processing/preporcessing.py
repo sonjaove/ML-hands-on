@@ -25,38 +25,38 @@ import torch
 process=Resize()
 class interpolate():
     
-    def make_image(self, data_pth):
-        # Load the dataset
-        ds = xr.open_dataset(data_pth)
-        interpolated_data = np.array(ds['precipitation'].values)
-        images = []
+    #def make_image(self, data_pth):
+    #    # Load the dataset
+    #    ds = xr.open_dataset(data_pth)
+    #    interpolated_data = np.array(ds['precipitation'].values)
+    #    images = []
 
-        # Loop through each time step and save the image
-        for i, data in tqdm(enumerate(interpolated_data), total=len(interpolated_data)):
-            fig, ax = plt.subplots()
-            
-            # Normalize the data for color mapping
-            data_normalized = (data - np.min(data)) / (np.ptp(data))
-            
-            # Plot the data as an image
-            cax = ax.imshow(data_normalized, cmap='viridis', interpolation='nearest')
-            fig.colorbar(cax)
-            
-            # Overlay the original data values on the image
-            for (j, k), val in np.ndenumerate(data):
-                ax.text(k, j, f'{val:.2f}', ha='center', va='center', color='white')
-            
-            # Remove axes for a cleaner image
-            ax.axis('off')
-            
-            # Save the figure to a PIL image
-            fig.canvas.draw()
-            image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
-            images.append(image)
-            
-            plt.close(fig)  # Close the figure to free up memory
+    #    # Loop through each time step and save the image
+    #    for i, data in tqdm(enumerate(interpolated_data), total=len(interpolated_data)):
+    #        fig, ax = plt.subplots()
+    #        
+    #        # Normalize the data for color mapping
+    #        data_normalized = (data - np.min(data)) / (np.ptp(data))
+    #        
+    #        # Plot the data as an image
+    #        cax = ax.imshow(data_normalized, cmap='viridis', interpolation='nearest')
+    #        fig.colorbar(cax)
+    #        
+    #        # Overlay the original data values on the image
+    #        for (j, k), val in np.ndenumerate(data):
+    #            ax.text(k, j, f'{val:.2f}', ha='center', va='center', color='white')
+    #        
+    #        # Remove axes for a cleaner image
+    #        ax.axis('off')
+    #        
+    #        # Save the figure to a PIL image
+    #        fig.canvas.draw()
+    #        image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
+    #        images.append(image)
+    #        
+    #        plt.close(fig)  # Close the figure to free up memory
 
-        return images
+    #    return images
     
     def make_image_from_data(self, data):
         images = []
@@ -68,7 +68,7 @@ class interpolate():
 
         return images
 
-    
+    #this method is used to upsample images.
     def interpolate_data(self, nc_file_path, old_resolution, new_resolution):
         # Load the NetCDF dataset
         ds = xr.open_dataset(nc_file_path)
@@ -93,32 +93,46 @@ class interpolate():
                 interpolated_precipitation_data.append(interpolated_data)
         else:
             # Handle single time step case
+            '''bicubic interpolation -  considers the nearest 4x4 grid of points to estimate new values. 
+            This method is smoother and typically produces better results for resizing images or data because it accounts for more neighboring points.'''
             interpolated_precipitation_data = zoom(precipitation_data, zoom_factor, order=3)
             # Set negative values to 0
             interpolated_precipitation_data[interpolated_precipitation_data < 0] = 0
         
         return np.array(interpolated_precipitation_data)
+    
+    def generate_lat_lon(self, data_pth, new_res=0.1):
+        # Load the dataset
+    
+        ds = xr.open_dataset(data_pth)
+        lat = ds['lat'].values
+        lon = ds['lon'].values
+        #these would be actually shift the data from whatever would be the ground truth.
+        lat_edges = np.arange(lat.min(), lat.max(), new_res)
+        lon_edges = np.arange(lon.min(), lon.max(), new_res)
+        #inter_lat, inter_lon = np.meshgrid(lat_edges, lon_edges)
+        return lat_edges, lon_edges
 
-
-    def save_xarray(self,interpolated_data,data_pth,save_path):	
+    def save_xarray(self,interpolated_data,data_pth,save_path,new_res):	
         # Load the dataset
         ds = xr.open_dataset(data_pth)
         start_date = ds['time'].values[0]
         end_date = ds['time'].values[-1]
 
-        lat = ds['lat'].values
-        lon=ds['lon'].values
-        inter_lat,inter_lon=np.meshgrid(np.arange(lat.min(),lat.max(),0.1),np.arange(lon.min(),lon.max(),0.1))
+        lat_edges, lon_edges = self.generate_lat_lon(data_pth, new_res)
         # Create a DataArray from the interpolated data
         date_range = pd.date_range(start=start_date, end=end_date, freq='D')
 
+        expected_shape = (len(date_range), len(lat_edges), len(lon_edges))
+        assert interpolated_data.shape == expected_shape, f"Expected shape {expected_shape}, but got {interpolated_data.shape}"
+
+        # Create a DataArray from the interpolated data
         interpolated_data_xr = xr.DataArray(
             interpolated_data,
             dims=['time', 'lat', 'lon'],
-            coords={'time': date_range, 'lat': inter_lat, 'lon': inter_lon}
-            
-            )
-        
+            coords={'time': date_range, 'lat': lat_edges, 'lon': lon_edges}
+        )
+
         # Save the interpolated data to a NetCDF file
         interpolated_data_xr.to_netcdf(save_path)
 
