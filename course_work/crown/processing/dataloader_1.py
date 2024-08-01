@@ -1,9 +1,9 @@
 from torch.utils.data import DataLoader, Dataset, SubsetRandomSampler
-from PIL import Image, ImageFilter
+from PIL import Image
 import os
 import torch
 import numpy as np
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, LeaveOneOut
 from tqdm import tqdm
 
 class CustomDataset(Dataset):
@@ -89,6 +89,8 @@ class ImageDataset(Dataset):
         
         if image_np.ndim == 2:  # Grayscale image
             image_tensor = torch.tensor(image_np, dtype=torch.float32).unsqueeze(0)  # Add channel dimension
+        elif image_np.ndim == 4:  # Already batched image
+            image_tensor = torch.tensor(image_np, dtype=torch.float32)
         else:  # RGB image
             image_tensor = torch.tensor(image_np, dtype=torch.float32).permute(2, 0, 1)
         
@@ -128,11 +130,13 @@ def split_train_test(images, train_split=0.8):
 def flatten_nested_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
 
-def kfold_validation(lr_images, hr_images,k=5, batch_size=64):
+def kfold_validation(lr_images, hr_images, k=5, batch_size=64):
     kf = KFold(n_splits=k, shuffle=True, random_state=42)
-    
     folds = list(kf.split(lr_images))
     
+    save_dir = 'fold_data'
+    os.makedirs(save_dir, exist_ok=True)
+
     for fold, (train_indices, test_indices) in enumerate(tqdm(folds, desc='K-Fold Validation')):
         print(f"Processing Fold {fold + 1}/{k}")
 
@@ -141,23 +145,48 @@ def kfold_validation(lr_images, hr_images,k=5, batch_size=64):
         test_lr_images = [lr_images[i] for i in test_indices]
         test_hr_images = [hr_images[i] for i in test_indices]
         
-        # Split dataset into train and test images for this fold
         train_dataset = ImageDataset((train_lr_images, train_hr_images))
         test_dataset = ImageDataset((test_lr_images, test_hr_images))
 
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-        # Save both train and test datasets into a single file
         fold_data = {
             'train_dataset': train_dataset,
             'test_dataset': test_dataset
         }
-        torch.save(fold_data, f"fold_{fold + 1}.pth")
+        torch.save(fold_data, os.path.join(save_dir, f"fold_{fold + 1}.pth"))
 
         print(f"Fold {fold + 1} complete.\n")
 
-    print("K-Fold data prep complete.")
+def leave_one_out_validation(dataset, batch_size=64):
+    loo = LeaveOneOut()
+    folds = list(loo.split(dataset.lr_files))
+    
+    save_dir = 'loov_data'
+    os.makedirs(save_dir, exist_ok=True)
+
+    for fold, (train_indices, test_indices) in enumerate(tqdm(folds, desc='Leave-One-Out Validation')):
+        print(f"Processing Fold {fold + 1}/{len(folds)}")
+
+        train_lr_images = [dataset.lr_files[i] for i in train_indices]
+        train_hr_images = [dataset.hr_files[i] for i in train_indices]
+        test_lr_images = [dataset.lr_files[i] for i in test_indices]
+        test_hr_images = [dataset.hr_files[i] for i in test_indices]
+
+        train_dataset = CustomDataset(train_lr_images, train_hr_images)
+        test_dataset = CustomDataset(test_lr_images, test_hr_images)
+
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+        fold_data = {
+            'train_dataset': train_dataset,
+            'test_dataset': test_dataset
+        }
+        torch.save(fold_data, os.path.join(save_dir, f"loov_{fold + 1}.pth"))
+
+        print(f"loov {fold + 1} complete.\n")
 
 def load_fold_data(filepath):
     fold_data = torch.load(filepath)
@@ -165,32 +194,30 @@ def load_fold_data(filepath):
     test_dataset = fold_data['test_dataset']
     return train_dataset, test_dataset
 
-def process_images(lr_input, hr_input, save_path, batch_size=64, k_fold=False, k=5,tts_ratio=0.8):
-    # Create CustomDataset
+def process_images(lr_input, hr_input, save_path, batch_size=64, k_fold=False, k=5, loov=True, tts_ratio=0.8):
     dataset = CustomDataset(lr_input, hr_input)
 
-    if k_fold:
-        # Perform k-fold validation
+    if loov:
+        leave_one_out_validation(dataset, batch_size=batch_size)
+        
+    elif k_fold:
         kfold_validation(dataset.lr_files, dataset.hr_files, k=k, batch_size=batch_size)
     else:
-        # Split dataset into train and test sets
-        
         train_indices, test_indices = dataset.split_train_test_indices(split_ratio=tts_ratio)
         
-        # Create train DataLoader
         train_sampler = SubsetRandomSampler(train_indices)
         train_dataloader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler)
         
-        # Create test DataLoader
         test_sampler = SubsetRandomSampler(test_indices)
         test_dataloader = DataLoader(dataset, batch_size=batch_size, sampler=test_sampler)
         
-        # Save train DataLoader
-        train_save_path = save_path + '_train.pth'
+        save_dir = os.path.dirname(save_path)
+        os.makedirs(save_dir, exist_ok=True)
+
+        train_save_path = os.path.join(save_dir, 'train.pth')
         torch.save(train_dataloader.dataset, train_save_path)
         print(f"Train DataLoader saved to {train_save_path}")
         
-        # Save test DataLoader
-        test_save_path = save_path + '_test.pth'
+        test_save_path = os.path.join(save_dir, 'test.pth')
         torch.save(test_dataloader.dataset, test_save_path)
         print(f"Test DataLoader saved to {test_save_path}")
