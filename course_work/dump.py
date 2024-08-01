@@ -346,6 +346,37 @@ if __name__ == "__main__":
     train_loader, test_loader = process_images(lr_input, hr_input, save_path, batch_size=batch_size, tts_ratio=tts_ratio)
 
 
+'''form dataloader_1.py, one version of kfold splitting, which has train and test within it.'''
+
+for fold, (train_indices, test_indices) in enumerate(tqdm(folds, desc='K-Fold Validation')):
+        print(f"Processing Fold {fold + 1}/{k}")
+
+        train_lr_images = [lr_images[i] for i in train_indices]
+        train_hr_images = [hr_images[i] for i in train_indices]
+        test_lr_images = [lr_images[i] for i in test_indices]
+        test_hr_images = [hr_images[i] for i in test_indices]
+        
+        # Split dataset into train and test images for this fold
+        train_dataset = ImageDataset((train_lr_images, train_hr_images))
+        test_dataset = ImageDataset((test_lr_images, test_hr_images))
+
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+        # Save both train and test datasets into a single file
+        fold_data = {
+            'train_dataset': train_dataset,
+            'test_dataset': test_dataset
+        }
+        torch.save(fold_data, f"fold_{fold + 1}.pth")
+
+        print(f"Fold {fold + 1} complete.\n")
+
+    print("K-Fold data prep complete.")
+
+
+
+
 '''form preprocessing.py and the resmaple method'''
 
 hr=xr.open_dataset(hr_pth)
