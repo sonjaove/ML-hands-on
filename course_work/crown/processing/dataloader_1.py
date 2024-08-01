@@ -198,10 +198,10 @@ def process_images(lr_input, hr_input, save_path, batch_size=64, k_fold=False, k
     dataset = CustomDataset(lr_input, hr_input)
 
     if loov:
-        leave_one_out_validation(dataset, batch_size=batch_size)
+        leave_one_out_validation(dataset, save_path,batch_size=batch_size)
         
     elif k_fold:
-        kfold_validation(dataset.lr_files, dataset.hr_files, k=k, batch_size=batch_size)
+        kfold_validation(dataset.lr_files, dataset.hr_files, save_path,k=k, batch_size=batch_size)
     else:
         train_indices, test_indices = dataset.split_train_test_indices(split_ratio=tts_ratio)
         
