@@ -24,40 +24,7 @@ import torch
 
 process=Resize()
 class interpolate():
-    
-    #def make_image(self, data_pth):
-    #    # Load the dataset
-    #    ds = xr.open_dataset(data_pth)
-    #    interpolated_data = np.array(ds['precipitation'].values)
-    #    images = []
 
-    #    # Loop through each time step and save the image
-    #    for i, data in tqdm(enumerate(interpolated_data), total=len(interpolated_data)):
-    #        fig, ax = plt.subplots()
-    #        
-    #        # Normalize the data for color mapping
-    #        data_normalized = (data - np.min(data)) / (np.ptp(data))
-    #        
-    #        # Plot the data as an image
-    #        cax = ax.imshow(data_normalized, cmap='viridis', interpolation='nearest')
-    #        fig.colorbar(cax)
-    #        
-    #        # Overlay the original data values on the image
-    #        for (j, k), val in np.ndenumerate(data):
-    #            ax.text(k, j, f'{val:.2f}', ha='center', va='center', color='white')
-    #        
-    #        # Remove axes for a cleaner image
-    #        ax.axis('off')
-    #        
-    #        # Save the figure to a PIL image
-    #        fig.canvas.draw()
-    #        image = Image.frombytes('RGB', fig.canvas.get_width_height(), fig.canvas.tostring_rgb())
-    #        images.append(image)
-    #        
-    #        plt.close(fig)  # Close the figure to free up memory
-
-    #    return images
-    
     def make_image_from_data(self, data):
         images = []
 
