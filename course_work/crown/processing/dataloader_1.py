@@ -3,6 +3,8 @@ from PIL import Image, ImageFilter
 import os
 import torch
 import numpy as np
+from sklearn.model_selection import KFold
+from tqdm import tqdm
 
 class CustomDataset(Dataset):
     def __init__(self, lr_input, hr_input, transform=None):
@@ -91,6 +93,14 @@ class ImageDataset(Dataset):
             image_tensor = torch.tensor(image_np, dtype=torch.float32).permute(2, 0, 1)
         
         return image_tensor
+
+    def seek(self, idx):
+        if idx < 0 or idx >= len(self.images):
+            raise IndexError("Index out of range")
+
+    def get_current_index(self):
+        return self.current_idx
+
     
 def create_dataloader(images, batch_size=32, shuffle=True):
     dataset = ImageDataset(images)
@@ -118,29 +128,68 @@ def split_train_test(images, train_split=0.8):
 def flatten_nested_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
 
-def process_images(lr_input, hr_input, save_path, batch_size=32, tts_ratio=0.8):
+def kfold_validation(lr_images, hr_images,k=5, batch_size=32):
+    kf = KFold(n_splits=k, shuffle=True, random_state=42)
+    
+    folds = list(kf.split(lr_images, hr_images))
+    
+    for fold, (train_indices, test_indices) in enumerate(tqdm(folds, desc='K-Fold Validation')):
+        print(f"Processing Fold {fold + 1}/{k}")
+        
+        # Split dataset into train and test images for this fold
+        train_images = [(lr_images,hr_images)[i] for i in train_indices]
+        test_images = [(lr_images,hr_images)[i] for i in test_indices]
+
+        # Create Datasets and DataLoaders
+        train_dataset = ImageDataset(train_images)
+        test_dataset = ImageDataset(test_images)
+
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+        # Save both train and test datasets into a single file
+        fold_data = {
+            'train_dataset': train_dataset,
+            'test_dataset': test_dataset
+        }
+        torch.save(fold_data, f"fold_{fold + 1}.pth")
+
+        print(f"Fold {fold + 1} complete.\n")
+
+    print("K-Fold data prep complete.")
+
+def load_fold_data(filepath):
+    fold_data = torch.load(filepath)
+    train_dataset = fold_data['train_dataset']
+    test_dataset = fold_data['test_dataset']
+    return train_dataset, test_dataset
+
+def process_images(lr_input, hr_input, save_path, batch_size=32, k_fold=False, k=5,tts_ratio=0.8):
     # Create CustomDataset
     dataset = CustomDataset(lr_input, hr_input)
-    
-    # Split dataset into train and test sets
-    train_indices, test_indices = dataset.split_train_test_indices(split_ratio=tts_ratio)
-    
-    # Create train DataLoader
-    train_sampler = SubsetRandomSampler(train_indices)
-    train_dataloader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler)
-    
-    # Create test DataLoader
-    test_sampler = SubsetRandomSampler(test_indices)
-    test_dataloader = DataLoader(dataset, batch_size=batch_size, sampler=test_sampler)
-    
-    # Save train DataLoader
-    train_save_path = save_path + '_train.pth'
-    torch.save(train_dataloader.dataset, train_save_path)
-    print(f"Train DataLoader saved to {train_save_path}")
-    
-    # Save test DataLoader
-    test_save_path = save_path + '_test.pth'
-    torch.save(test_dataloader.dataset, test_save_path)
-    print(f"Test DataLoader saved to {test_save_path}")
-    
-    return train_dataloader, test_dataloader
+
+    if k_fold:
+        # Perform k-fold validation
+        kfold_validation(dataset.lr_files, dataset.hr_files, k=k, batch_size=batch_size)
+    else:
+        # Split dataset into train and test sets
+        
+        train_indices, test_indices = dataset.split_train_test_indices(split_ratio=tts_ratio)
+        
+        # Create train DataLoader
+        train_sampler = SubsetRandomSampler(train_indices)
+        train_dataloader = DataLoader(dataset, batch_size=batch_size, sampler=train_sampler)
+        
+        # Create test DataLoader
+        test_sampler = SubsetRandomSampler(test_indices)
+        test_dataloader = DataLoader(dataset, batch_size=batch_size, sampler=test_sampler)
+        
+        # Save train DataLoader
+        train_save_path = save_path + '_train.pth'
+        torch.save(train_dataloader.dataset, train_save_path)
+        print(f"Train DataLoader saved to {train_save_path}")
+        
+        # Save test DataLoader
+        test_save_path = save_path + '_test.pth'
+        torch.save(test_dataloader.dataset, test_save_path)
+        print(f"Test DataLoader saved to {test_save_path}")
