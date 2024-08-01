@@ -130,11 +130,11 @@ def split_train_test(images, train_split=0.8):
 def flatten_nested_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
 
-def kfold_validation(lr_images, hr_images, k=5, batch_size=64):
+def kfold_validation(lr_images, hr_images,save_dir,k=5, batch_size=64):
     kf = KFold(n_splits=k, shuffle=True, random_state=42)
     folds = list(kf.split(lr_images))
     
-    save_dir = 'fold_data'
+    #save_dir = 'fold_data'
     os.makedirs(save_dir, exist_ok=True)
 
     for fold, (train_indices, test_indices) in enumerate(tqdm(folds, desc='K-Fold Validation')):
@@ -159,11 +159,11 @@ def kfold_validation(lr_images, hr_images, k=5, batch_size=64):
 
         print(f"Fold {fold + 1} complete.\n")
 
-def leave_one_out_validation(dataset, batch_size=64):
+def leave_one_out_validation(dataset, save_dir ,batch_size=64):
     loo = LeaveOneOut()
     folds = list(loo.split(dataset.lr_files))
     
-    save_dir = 'loov_data'
+    #save_dir = 'loov_data'
     os.makedirs(save_dir, exist_ok=True)
 
     for fold, (train_indices, test_indices) in enumerate(tqdm(folds, desc='Leave-One-Out Validation')):
