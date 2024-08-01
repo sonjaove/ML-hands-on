@@ -3,3 +3,4 @@ train_tani.py
 checkpoints.ipynb
 __pycache__/
 dump.py
+resize.py
