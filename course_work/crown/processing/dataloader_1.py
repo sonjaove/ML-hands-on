@@ -128,21 +128,22 @@ def split_train_test(images, train_split=0.8):
 def flatten_nested_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
 
-def kfold_validation(lr_images, hr_images,k=5, batch_size=32):
+def kfold_validation(lr_images, hr_images,k=5, batch_size=64):
     kf = KFold(n_splits=k, shuffle=True, random_state=42)
     
-    folds = list(kf.split(lr_images, hr_images))
+    folds = list(kf.split(lr_images))
     
     for fold, (train_indices, test_indices) in enumerate(tqdm(folds, desc='K-Fold Validation')):
         print(f"Processing Fold {fold + 1}/{k}")
+
+        train_lr_images = [lr_images[i] for i in train_indices]
+        train_hr_images = [hr_images[i] for i in train_indices]
+        test_lr_images = [lr_images[i] for i in test_indices]
+        test_hr_images = [hr_images[i] for i in test_indices]
         
         # Split dataset into train and test images for this fold
-        train_images = [(lr_images,hr_images)[i] for i in train_indices]
-        test_images = [(lr_images,hr_images)[i] for i in test_indices]
-
-        # Create Datasets and DataLoaders
-        train_dataset = ImageDataset(train_images)
-        test_dataset = ImageDataset(test_images)
+        train_dataset = ImageDataset((train_lr_images, train_hr_images))
+        test_dataset = ImageDataset((test_lr_images, test_hr_images))
 
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
@@ -164,7 +165,7 @@ def load_fold_data(filepath):
     test_dataset = fold_data['test_dataset']
     return train_dataset, test_dataset
 
-def process_images(lr_input, hr_input, save_path, batch_size=32, k_fold=False, k=5,tts_ratio=0.8):
+def process_images(lr_input, hr_input, save_path, batch_size=64, k_fold=False, k=5,tts_ratio=0.8):
     # Create CustomDataset
     dataset = CustomDataset(lr_input, hr_input)
 
