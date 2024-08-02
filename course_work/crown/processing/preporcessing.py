@@ -74,7 +74,7 @@ class interpolate():
         ds = xr.open_dataset(data_pth)
         lat = ds['lat'].values
         lon = ds['lon'].values
-        #these would be actually shift the data from whatever would be the ground truth.
+        
         lat_edges = np.arange(lat.min(), lat.max(), new_res)
         lon_edges = np.arange(lon.min(), lon.max(), new_res)
         #inter_lat, inter_lon = np.meshgrid(lat_edges, lon_edges)
