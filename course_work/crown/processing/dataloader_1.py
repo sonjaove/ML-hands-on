@@ -188,11 +188,13 @@ def leave_one_out_validation(dataset, save_dir ,batch_size=64):
 
         print(f"loov {fold + 1} complete.\n")
 
-def load_fold_data(filepath):
+def load_fold_data(filepath,batch_size=64):
     fold_data = torch.load(filepath)
     train_dataset = fold_data['train_dataset']
     test_dataset = fold_data['test_dataset']
-    return train_dataset, test_dataset
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    return train_dataloader, test_dataloader
 
 def process_images(lr_input, hr_input, save_path, batch_size=64, k_fold=False, k=5, loov=True, tts_ratio=0.8):
     dataset = CustomDataset(lr_input, hr_input)
