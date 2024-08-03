@@ -68,25 +68,35 @@ class interpolate():
         
         return np.array(interpolated_precipitation_data)
     
-    def generate_lat_lon(self, data_pth, new_res=0.1):
+    def generate_lat_lon(self, data_pth, new_res=0.1, old_res=0.25):
+    # Check if the dataset file exists
+        if not os.path.exists(data_pth):
+            raise FileNotFoundError(f"The dataset file at {data_pth} does not exist.")
+        
         # Load the dataset
-    
         ds = xr.open_dataset(data_pth)
         lat = ds['lat'].values
         lon = ds['lon'].values
         
-        lat_edges = np.arange(lat.min(), lat.max(), new_res)
-        lon_edges = np.arange(lon.min(), lon.max(), new_res)
-        #inter_lat, inter_lon = np.meshgrid(lat_edges, lon_edges)
-        return lat_edges, lon_edges
+        # Check the resolution change
+        zoom = new_res / old_res
+        if zoom <= 1:  # Case of upsampling
+            lat_edges = np.arange(lat.min(), lat.max() , new_res)
+            lon_edges = np.arange(lon.min(), lon.max(), new_res)
+            return lat_edges, lon_edges  # This is case specific as we are generating the hr and lr from the same data
+        else:  # Case of downsampling
+            # Generate new latitude and longitude edges
+            lat_edges = np.arange(lat.min(), lat.max() - old_res, new_res)
+            lon_edges = np.arange(lon.min(), lon.max()- old_res, new_res)
+            return lat_edges, lon_edges
 
-    def save_xarray(self,interpolated_data,data_pth,save_path,new_res):	
+    def save_xarray(self,interpolated_data,data_pth,save_path,new_res,old_res=0.25):	
         # Load the dataset
         ds = xr.open_dataset(data_pth)
         start_date = ds['time'].values[0]
         end_date = ds['time'].values[-1]
 
-        lat_edges, lon_edges = self.generate_lat_lon(data_pth, new_res)
+        lat_edges, lon_edges = self.generate_lat_lon(data_pth, new_res,old_res)
         # Create a DataArray from the interpolated data
         date_range = pd.date_range(start=start_date, end=end_date, freq='D')
 
@@ -94,11 +104,15 @@ class interpolate():
         assert interpolated_data.shape == expected_shape, f"Expected shape {expected_shape}, but got {interpolated_data.shape}"
 
         # Create a DataArray from the interpolated data
-        interpolated_data_xr = xr.DataArray(
-            interpolated_data,
-            dims=['time', 'lat', 'lon'],
-            coords={'time': date_range, 'lat': lat_edges, 'lon': lon_edges}
-        )
+        interpolated_data_xr = ds = xr.Dataset(
+    {"precipitation": (("time", "lat","lon"), interpolated_data)},
+    coords={
+        "time": date_range,
+        "lat": lat_edges,
+        "lon": lon_edges,
+    },
+)
+
 
         # Save the interpolated data to a NetCDF file
         interpolated_data_xr.to_netcdf(save_path)
@@ -124,7 +138,7 @@ class interpolate():
         zoom = new_res/old_res
         if zoom<1: #case of upsmapling
             return self.interpolate_data(lr_pth,old_res,new_res)  
-        else: #case of downsampling
+        else: #case of downsampling, it would change the coords by 0.1 
            return  self.pooling(lr_pth,old_res,new_res)
           
     def pooling(self, data_pth,input_res=0.25,output_res=0.1 ): #will be used for downsampling the images, for now percdr datais used to downsample the data.
@@ -134,6 +148,7 @@ class interpolate():
         precipitation_data = ds[data_var_name].values
 
         #defining the pooling layer
+        #this will actually cause the grid to decrease by 0.1 on all sides
         pooling = torch.nn.AvgPool2d(2,2)
         #convilving the filter on the data
         interpolated_precipitation_data = []
