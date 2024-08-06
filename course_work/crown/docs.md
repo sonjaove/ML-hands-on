@@ -24,9 +24,9 @@ Cross validation techniques are used to evaluate the performance of a model and 
 import os 
 from dataloader_1 import *
 
-for fold in os.listdir(r'F:\TANISHQ\ML-hands-on\course_work\crown\data\fold_data'):
-    file=r'F:\TANISHQ\ML-hands-on\course_work\crown\data\fold_data'+'\\'+fold
-    train,test=load_fold_data(file)
+for fold in os.listdir(filepath):
+    file=filepath+'\\'+fold
+    train,test=load_fold_data(file,batch_size)
     ##trainin loop as usual 
 
 
@@ -51,7 +51,6 @@ for fold in os.listdir(r'F:\TANISHQ\ML-hands-on\course_work\crown\data\fold_data
 
 ### Data Loaders
 
-- **Training DataLoader**: Created using all data points except one.
-- **Validation DataLoader**: Created using the single excluded data point.
-
-By using these techniques, we ensure that our model's performance is evaluated in a comprehensive and unbiased manner.
+- follow the same procedure as shown above to access the dataloaders from the folders.
+  
+By using these techniques, our model's performance is evaluated in a comprehensive and unbiased manner, which could potentially give good results.
