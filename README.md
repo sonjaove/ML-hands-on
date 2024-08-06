@@ -9,3 +9,4 @@
 
 - customize the codes to suit your needs.
 
+- [Docs for files uploaded on google drive](https://github.com/sonjaove/ML-hands-on/blob/main/course_work/crown/docs.md)
