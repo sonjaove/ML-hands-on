@@ -130,9 +130,9 @@ def split_train_test(images, train_split=0.8):
 def flatten_nested_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
 
-def kfold_validation(lr_images, hr_images,save_dir,k=5, batch_size=64):
+def kfold_validation(dataset,save_dir,k=5, batch_size=64):
     kf = KFold(n_splits=k, shuffle=True, random_state=42)
-    folds = list(kf.split(lr_images))
+    folds = list(kf.split(dataset.lr_files))
     
     #save_dir = 'fold_data'
     os.makedirs(save_dir, exist_ok=True)
@@ -140,13 +140,13 @@ def kfold_validation(lr_images, hr_images,save_dir,k=5, batch_size=64):
     for fold, (train_indices, test_indices) in enumerate(tqdm(folds, desc='K-Fold Validation')):
         print(f"Processing Fold {fold + 1}/{k}")
 
-        train_lr_images = [lr_images[i] for i in train_indices]
-        train_hr_images = [hr_images[i] for i in train_indices]
-        test_lr_images = [lr_images[i] for i in test_indices]
-        test_hr_images = [hr_images[i] for i in test_indices]
+        train_lr_images = [dataset.lr_files[i] for i in train_indices]
+        train_hr_images = [dataset.hr_files[i] for i in train_indices]
+        test_lr_images =  [dataset.lr_files[i] for i in test_indices]
+        test_hr_images =  [dataset.hr_files[i] for i in test_indices]
         
-        train_dataset = ImageDataset((train_lr_images, train_hr_images))
-        test_dataset = ImageDataset((test_lr_images, test_hr_images))
+        train_dataset = CustomDataset(train_lr_images, train_hr_images)
+        test_dataset = CustomDataset(test_lr_images, test_hr_images)
 
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
@@ -203,7 +203,7 @@ def process_images(lr_input, hr_input, save_path, batch_size=64, k_fold=False, k
         leave_one_out_validation(dataset, save_path,batch_size=batch_size)
         
     elif k_fold:
-        kfold_validation(dataset.lr_files, dataset.hr_files, save_path,k=k, batch_size=batch_size)
+        kfold_validation(dataset, save_path,k=k, batch_size=batch_size)
     else:
         train_indices, test_indices = dataset.split_train_test_indices(split_ratio=tts_ratio)
         
