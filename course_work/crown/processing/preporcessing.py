@@ -86,8 +86,8 @@ class interpolate():
             return lat_edges, lon_edges  # This is case specific as we are generating the hr and lr from the same data
         else:  # Case of downsampling
             # Generate new latitude and longitude edges
-            lat_edges = np.arange(lat.min(), lat.max() - old_res, new_res)
-            lon_edges = np.arange(lon.min(), lon.max()- old_res, new_res)
+            lat_edges = np.arange(lat.min()-old_res, lat.max() - old_res, new_res)
+            lon_edges = np.arange(lon.min()-old_res, lon.max()- old_res, new_res)
             return lat_edges, lon_edges
 
     def save_xarray(self,interpolated_data,data_pth,save_path,new_res,old_res=0.25):	
