@@ -76,43 +76,49 @@ class CustomDataset(Dataset):
         dataset = torch.load(filepath)
         return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
-class ImageDataset(Dataset):
-    def __init__(self, images):
-        self.images = images
-        
-    def __len__(self):
-        return len(self.images)
-    
-    def __getitem__(self, idx):
-        image = self.images[idx]
-        image_np = np.array(image)
-        
-        if image_np.ndim == 2:  # Grayscale image
-            image_tensor = torch.tensor(image_np, dtype=torch.float32).unsqueeze(0)  # Add channel dimension
-        elif image_np.ndim == 4:  # Already batched image
-            image_tensor = torch.tensor(image_np, dtype=torch.float32)
-        else:  # RGB image
-            image_tensor = torch.tensor(image_np, dtype=torch.float32).permute(2, 0, 1)
-        
-        return image_tensor
-
-    def seek(self, idx):
-        if idx < 0 or idx >= len(self.images):
-            raise IndexError("Index out of range")
-
-    def get_current_index(self):
-        return self.current_idx
-
-    
-def create_dataloader(images, batch_size=32, shuffle=True):
-    dataset = ImageDataset(images)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+#class ImageDataset(Dataset):
+#    def __init__(self, images):
+#        self.images = images
+#        
+#    def __len__(self):
+#        return len(self.images)
+#    
+#    def __getitem__(self, idx):
+#        image = self.images[idx]
+#        image_np = np.array(image)
+#        
+#        if image_np.ndim == 2:  # Grayscale image
+#            image_tensor = torch.tensor(image_np, dtype=torch.float32).unsqueeze(0)  # Add channel dimension
+#        elif image_np.ndim == 4:  # Already batched image
+#            image_tensor = torch.tensor(image_np, dtype=torch.float32)
+#        else:  # RGB image
+#            image_tensor = torch.tensor(image_np, dtype=torch.float32).permute(2, 0, 1)
+#        
+#        return image_tensor
+#
+#    def seek(self, idx):
+#        if idx < 0 or idx >= len(self.images):
+#            raise IndexError("Index out of range")
+#
+#    def get_current_index(self):
+#        return self.current_idx
+#
+#    
+#def create_dataloader(images, batch_size=32, shuffle=True):
+#    dataset = ImageDataset(images)
+#    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
 def save_dataloader(dataloader, filepath):
     torch.save(dataloader.dataset, filepath)
 
-def load_dataloader(filepath, batch_size=32, shuffle=True):
+def load_dataloader(filepath, batch_size=32, shuffle=True, transform=None):
+
     dataset = torch.load(filepath)
+
+    if transform:
+        #dataset = torch.load(filepath)
+        dataset.transform = transform
+    
     return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
 def split_train_test(images, train_split=0.8):
@@ -188,10 +194,15 @@ def leave_one_out_validation(dataset, save_dir ,batch_size=64):
 
         print(f"loov {fold + 1} complete.\n")
 
-def load_fold_data(filepath,batch_size=64):
+def load_fold_data(filepath,batch_size=64,transform=None):
     fold_data = torch.load(filepath)
     train_dataset = fold_data['train_dataset']
     test_dataset = fold_data['test_dataset']
+
+    if transform:
+        train_dataset.transform = transform
+        test_dataset.transform = transform
+    
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     return train_dataloader, test_dataloader
