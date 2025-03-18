@@ -4,3 +4,4 @@ checkpoints.ipynb
 __pycache__/
 dump.py
 resize.py
+***.nc
