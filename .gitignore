@@ -1,6 +1,6 @@
 model_tani.py
 train_tani.py
-checkpoints.ipynb
+# checkpoints.ipynb
 __pycache__/
 dump.py
 resize.py
