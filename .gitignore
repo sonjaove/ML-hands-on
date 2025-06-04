@@ -5,3 +5,4 @@ __pycache__/
 dump.py
 resize.py
 ***.nc
+***.hdf
