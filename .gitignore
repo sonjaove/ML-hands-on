@@ -12,3 +12,8 @@ resize.py
 ***.cfg
 course_work/shp_rohit/
 Shapefile_alakananda-20240627T070711Z-001/
+course_work/crown/processing/Botswana_data.mat
+course_work/crown/processing/botswana.ipynb
+course_work/crown/processing/HSI_datareading.ipynb
+course_work/crown/processing/Botswana_data/
+course_work/crown/processing/__pycache__/
