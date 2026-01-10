@@ -198,3 +198,18 @@ class interpolate():
 
         plt.tight_layout()
         plt.show()
+        
+    def plot_data(self, data, num_samples=5):
+        sample_indices = np.linspace(0, len(data) - 1, num_samples, dtype=int)
+
+        fig, axes = plt.subplots(1, num_samples, figsize=(20, 4))
+        if num_samples == 1:
+            axes = [axes]
+
+        for i, ax in zip(sample_indices, axes):
+            im = ax.imshow(data[i], cmap='viridis')
+            ax.set_title(f'Time step: {i}')
+            plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+        plt.tight_layout()
+        plt.show()
